@@ -1,10 +1,11 @@
 import "../App.css";
+import DoctorForm from "../components/DoctorForm";
 
 export default function Staff() {
     return (
-        <div className="container">
-            <h1>Сотрудники</h1>
-            <p>Здесь вы можете управлять врачами, медсестрами и ЦАХ-тарифами</p>
+        <div className="p-8">
+            <h1 className="text-2xl font-bold mb-6">Сотрудники</h1>
+            <DoctorForm />
         </div>
     );
 }
