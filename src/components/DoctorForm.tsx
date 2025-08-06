@@ -57,58 +57,64 @@ export default function DoctorForm() {
   };
 
   return (
-    <div className="p-4 border rounded shadow bg-white">
-      <h2 className="text-lg font-semibold mb-2">
-        {editingId ? "Редактировать врача" : "Добавить врача"}
-      </h2>
-      <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="border px-2 py-1 flex-1"
-          placeholder="ФИО врача"
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-1 rounded"
-        >
-          {editingId ? "Сохранить" : "Добавить"}
-        </button>
-        {editingId !== null && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingId(null);
-              setName("");
-            }}
-            className="bg-gray-500 text-white px-4 py-1 rounded"
-          >
-            Отмена
-          </button>
-        )}
-      </form>
+    <div className="min-h-screen bg-gray-100 px-4 pt-10">
+      <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-8 mx-auto">
+        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">
+          {editingId ? "Редактировать врача" : "Добавить врача"}
+        </h2>
 
-      <ul className="list-disc pl-6 space-y-2">
-        {doctors.map((doc) => (
-          <li key={doc.id} className="flex justify-between items-center">
-            <span>{doc.full_name}</span>
-            <div className="space-x-2">
-              <button
-                onClick={() => handleEdit(doc)}
-                className="text-sm text-yellow-600 hover:underline"
-              >
-                ✏️ Редактировать
-              </button>
-              <button
-                onClick={() => handleDelete(doc.id)}
-                className="text-sm text-red-600 hover:underline"
-              >
-                🗑 Удалить
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+        <form onSubmit={handleSubmit} className="flex gap-4 mb-8">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="ФИО врача"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold px-6 py-3 rounded-lg"
+          >
+            {editingId ? "Сохранить" : "Добавить"}
+          </button>
+          {editingId !== null && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingId(null);
+                setName("");
+              }}
+              className="bg-gray-500 hover:bg-gray-600 text-white text-lg font-semibold px-6 py-3 rounded-lg"
+            >
+              Отмена
+            </button>
+          )}
+        </form>
+
+        <ul className="space-y-4">
+          {doctors.map((doc) => (
+            <li
+              key={doc.id}
+              className="flex justify-between items-center border-b pb-2"
+            >
+              <span className="text-lg">{doc.full_name}</span>
+              <div className="space-x-4">
+                <button
+                  onClick={() => handleEdit(doc)}
+                  className="text-yellow-600 hover:underline text-lg"
+                >
+                  ✏️ Редактировать
+                </button>
+                <button
+                  onClick={() => handleDelete(doc.id)}
+                  className="text-red-600 hover:underline text-lg"
+                >
+                  🗑 Удалить
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
