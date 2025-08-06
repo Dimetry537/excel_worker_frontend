@@ -57,7 +57,7 @@ export default function DoctorForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 pt-10">
+    <div className="bg-gray-100 px-4 pt-10">
       <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-8 mx-auto">
         <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">
           {editingId ? "Редактировать врача" : "Добавить врача"}
