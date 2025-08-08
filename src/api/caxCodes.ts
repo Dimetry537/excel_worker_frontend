@@ -4,6 +4,7 @@ export interface CaxCode {
   id: number;
   cax_code: number;
   cax_name: string;
+  quantity_of_days: number;
 }
 
 export async function getCaxCodes(): Promise<CaxCode[]> {
