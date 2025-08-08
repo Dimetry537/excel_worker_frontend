@@ -3,6 +3,7 @@ import { api } from "./client";
 export interface Doctor {
     id: number;
     full_name: string;
+    is_active: boolean;
 }
 
 export async function getDoctors(): Promise<Doctor[]> {
@@ -28,3 +29,10 @@ export async function deleteDoctor(id: number): Promise<void> {
         method: 'DELETE',
     });
 }
+
+export async function toggleDoctor(id: number) {
+  return api<Doctor>(`/doctors/${id}/toggle_active`, {
+    method: "PATCH",
+  });
+}
+

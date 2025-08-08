@@ -4,6 +4,7 @@ import {
   getDoctors,
   deleteDoctor,
   updateDoctor,
+  toggleDoctor,
 } from "../api/doctors";
 import type { Doctor } from "../api/doctors";
 
@@ -11,6 +12,7 @@ export default function DoctorForm() {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const fetchDoctors = async () => {
     try {
@@ -56,6 +58,19 @@ export default function DoctorForm() {
     setName(doctor.full_name);
   };
 
+  const handleToggleActive = async (id: number) => {
+    try {
+      await toggleDoctor(id);
+      await fetchDoctors();
+    } catch (error) {
+      console.error("Ошибка при изменении активности:", error);
+    }
+  };
+
+  const filteredDoctors = showInactive
+    ? doctors
+    : doctors.filter((doc) => doc.is_active);
+
   return (
     <div className="bg-gray-100 px-4 pt-10">
       <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-8 mx-auto">
@@ -63,7 +78,7 @@ export default function DoctorForm() {
           {editingId ? "Редактировать врача" : "Добавить врача"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex gap-4 mb-8">
+        <form onSubmit={handleSubmit} className="flex gap-4 mb-4">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -90,11 +105,24 @@ export default function DoctorForm() {
           )}
         </form>
 
+        <div className="flex justify-between items-center mb-4">
+          <label className="flex items-center gap-2 text-lg">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            Показать скрытых
+          </label>
+        </div>
+
         <ul className="space-y-4">
-          {doctors.map((doc) => (
+          {filteredDoctors.map((doc) => (
             <li
               key={doc.id}
-              className="flex justify-between items-center border-b pb-2"
+              className={`flex justify-between items-center border-b pb-2 ${
+                !doc.is_active ? "opacity-50" : ""
+              }`}
             >
               <span className="text-lg">{doc.full_name}</span>
               <div className="space-x-4">
@@ -103,6 +131,12 @@ export default function DoctorForm() {
                   className="text-yellow-600 hover:underline text-lg"
                 >
                   ✏️ Редактировать
+                </button>
+                <button
+                  onClick={() => handleToggleActive(doc.id)}
+                  className="text-blue-600 hover:underline text-lg"
+                >
+                  {doc.is_active ? "🙈 Скрыть" : "👁 Показать"}
                 </button>
                 <button
                   onClick={() => handleDelete(doc.id)}
