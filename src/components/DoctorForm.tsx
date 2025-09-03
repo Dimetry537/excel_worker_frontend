@@ -72,22 +72,22 @@ export default function DoctorForm() {
     : doctors.filter((doc) => doc.is_active);
 
   return (
-    <div className="bg-gray-100 px-4 pt-10">
-      <div className="w-full max-w-sm bg-white rounded-xl shadow-lg p-8 mx-auto">
-        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">
+    <div className="bg-gray-100 px-2 pt-4 h-[33vh]">
+      <div className="bg-green-200 rounded-2xl shadow-lg p-6 w-96">
+        <h2 className="text-xl font-bold mb-3 text-blue-800 text-center">
           {editingId ? "Редактировать врача" : "Добавить врача"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex gap-4 mb-4">
+        <form onSubmit={handleSubmit} className="flex gap-2 mb-2">
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="ФИО врача"
           />
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold px-6 py-3 rounded-lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold px-3 py-2 rounded-lg"
           >
             {editingId ? "Сохранить" : "Добавить"}
           </button>
@@ -98,15 +98,15 @@ export default function DoctorForm() {
                 setEditingId(null);
                 setName("");
               }}
-              className="bg-gray-500 hover:bg-gray-600 text-white text-lg font-semibold px-6 py-3 rounded-lg"
+              className="bg-gray-500 hover:bg-gray-600 text-white text-lg font-semibold px-3 py-2 rounded-lg"
             >
               Отмена
             </button>
           )}
         </form>
 
-        <div className="flex justify-between items-center mb-4">
-          <label className="flex items-center gap-2 text-lg">
+        <div className="flex justify-between items-center mb-2">
+          <label className="flex items-center gap-1 text-sm">
             <input
               type="checkbox"
               checked={showInactive}
@@ -116,15 +116,15 @@ export default function DoctorForm() {
           </label>
         </div>
 
-        <ul className="space-y-4">
+        <ul className="space-y-2">
           {filteredDoctors.map((doc) => (
             <li
               key={doc.id}
-              className={`flex justify-between items-center border-b pb-2 ${
+              className={`flex justify-between items-center border-b pb-1 ${
                 !doc.is_active ? "opacity-50" : ""
               }`}
             >
-              <span className="text-lg">{doc.full_name}</span>
+              <span className="text-sm">{doc.full_name}</span>
               <div className="space-x-4">
                 <button
                   onClick={() => handleEdit(doc)}

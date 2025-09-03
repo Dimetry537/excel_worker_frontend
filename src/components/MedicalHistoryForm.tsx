@@ -80,7 +80,7 @@ export default function MedicalHistoryForm({ onSuccess }: { onSuccess?: () => vo
 
   return (
     <div className="flex justify-center items-start min-h-screen bg-gray-50">
-      <form className="w-full max-w-md bg-white p-6 rounded-xl shadow" onSubmit={handleSubmit}>
+      <form className="w-auto max-w-md bg-white p-6 rounded-xl shadow" onSubmit={handleSubmit}>
         <h2 className="text-xl font-bold mb-4 text-blue-800">Добавить историю болезни</h2>
         {error && <div className="text-red-600 mb-2">{error}</div>}
       <div className="mb-3">
