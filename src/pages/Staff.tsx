@@ -1,7 +1,7 @@
 import "../App.css";
-// import CaxCodeForm from "../components/CaxCodesForm";
+import CaxCodeForm from "../components/CaxCodesForm";
 import DoctorForm from "../components/DoctorForm";
-// import NurseForm from "../components/NurseForm";
+import NurseForm from "../components/NurseForm";
 
 export default function Staff() {
   return (
@@ -11,13 +11,13 @@ export default function Staff() {
         <div className="w-auto">
           <DoctorForm />
         </div>
-        {/* <div className="w-full md:w-1/3">
+        <div className="w-center">
           <NurseForm />
         </div>
-        <div className="w-full md:w-1/3">
-          <CaxCodeForm /> */}
+        <div className="w-auto">
+          <CaxCodeForm />
         </div>
       </div>
-    // </div>
+    </div>
   );
 }

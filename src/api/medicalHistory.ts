@@ -1,5 +1,20 @@
 import { api } from "./client";
 
+export interface CaxCode {
+  id: number;
+  cax_name: string;
+}
+
+export interface Doctor {
+  id: number;
+  full_name: string;
+}
+
+export interface Nurse {
+  id: number;
+  full_name: string;
+}
+
 export interface MedicalHistoryCreate {
   admission_date: string;
   discharge_date?: string;
@@ -14,26 +29,20 @@ export interface MedicalHistoryCreate {
 }
 
 export async function createMedicalHistory(data: MedicalHistoryCreate) {
-  const response = await fetch("/medical_history/", {
+  return api("/medical_history/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err.detail || "Ошибка при сохранении");
-  }
-  return response.json();
 }
 
-export async function getCaxCodes() {
-  return api("/cax_codes");
+export async function getCaxCodes(): Promise<CaxCode[]> {
+  return api<CaxCode[]>("/cax_codes");
 }
 
-export async function getDoctors() {
-  return api("/doctors");
+export async function getDoctors(): Promise<Doctor[]> {
+  return api<Doctor[]>("/doctors");
 }
 
-export async function getNurses() {
-  return api("/nurses");
+export async function getNurses(): Promise<Nurse[]> {
+  return api<Nurse[]>("/nurses");
 }
