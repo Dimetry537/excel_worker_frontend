@@ -28,11 +28,40 @@ export interface MedicalHistoryCreate {
   nurse_id: number;
 }
 
+export interface MedicalHistory {
+  id: number;
+  history_number: number;
+  admission_date: string;
+  discharge_date?: string;
+  full_name: string;
+  birth_date: string;
+  address: string;
+  diagnosis: string;
+  icd10_code: string;
+  cancelled?: string | null;
+  cax_code_id: number;
+  doctor_id: number;
+  nurse_id: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function createMedicalHistory(data: MedicalHistoryCreate) {
   return api("/medical_history/", {
     method: "POST",
     body: data,
   });
+}
+
+export async function getMedicalHistoriesFiltered(
+  full_name?: string,
+  admission_date?: string
+): Promise<MedicalHistory[]> {
+  const params = new URLSearchParams();
+  if (full_name) params.append("full_name", full_name);
+  if (admission_date) params.append("admission_date", admission_date);
+
+  return api<MedicalHistory[]>(`/medical_history/?${params.toString()}`);
 }
 
 export async function getCaxCodes(): Promise<CaxCode[]> {
