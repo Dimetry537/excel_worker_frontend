@@ -31,7 +31,7 @@ export interface MedicalHistoryCreate {
 export async function createMedicalHistory(data: MedicalHistoryCreate) {
   return api("/medical_history/", {
     method: "POST",
-    body: JSON.stringify(data),
+    body: data,
   });
 }
 
