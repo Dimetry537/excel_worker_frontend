@@ -39,11 +39,19 @@ export interface MedicalHistory {
   diagnosis: string;
   icd10_code: string;
   cancelled?: string | null;
-  cax_code_id: number;
-  doctor_id: number;
-  nurse_id: number;
-  created_at: string;
-  updated_at: string;
+
+  doctor: {
+    id: number;
+    full_name: string;
+  };
+  nurse: {
+    id: number;
+    full_name: string;
+  };
+  cax_code: {
+    id: number;
+    cax_name: string;
+  };
 }
 
 export async function createMedicalHistory(data: MedicalHistoryCreate) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getMedicalHistoriesFiltered } from "../api/medicalHistory";
 import type { MedicalHistory } from "../api/medicalHistory";
+import { formatDate } from "../utils/formatDate";
 
 export default function Home() {
   const [histories, setHistories] = useState<MedicalHistory[]>([]);
@@ -83,42 +84,42 @@ return (
     ) : histories.length === 0 ? (
       <p className="text-center text-gray-500">Нет сохранённых историй</p>
     ) : (
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto mt-16">
         <table className="table-auto border-collapse border border-gray-300 max-w-5xl mx-auto">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border border-gray-300 px-3 py-2 w-20">№</th>
-              <th className="border border-gray-300 px-3 py-2 w-64">ФИО</th>
-              <th className="border border-gray-300 px-3 py-2 w-40">Дата рождения</th>
-              <th className="border border-gray-300 px-3 py-2 w-72">Диагноз</th>
-              <th className="border border-gray-300 px-3 py-2 w-40">Поступление</th>
-              <th className="border border-gray-300 px-3 py-2 w-40">Выписка</th>
-            </tr>
-          </thead>
-          <tbody>
-            {histories.map((h) => (
-              <tr key={h.id} className="hover:bg-gray-50">
-                <td className="border border-gray-300 px-3 py-2 text-center">
-                  {h.history_number}
-                </td>
-                <td className="border border-gray-300 px-3 py-2 truncate max-w-[16rem]">
-                  {h.full_name}
-                </td>
-                <td className="border border-gray-300 px-3 py-2 whitespace-nowrap">
-                  {h.birth_date}
-                </td>
-                <td className="border border-gray-300 px-3 py-2 truncate max-w-[18rem]">
-                  {h.diagnosis}
-                </td>
-                <td className="border border-gray-300 px-3 py-2 whitespace-nowrap">
-                  {h.admission_date}
-                </td>
-                <td className="border border-gray-300 px-3 py-2 whitespace-nowrap">
-                  {h.discharge_date || "-"}
-                </td>
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-3 py-2">№ истории</th>
+                <th className="border px-3 py-2">ФИО</th>
+                <th className="border px-3 py-2">Дата рождения</th>
+                <th className="border px-3 py-2">Адрес</th>
+                <th className="border px-3 py-2">Диагноз</th>
+                <th className="border px-3 py-2">Код МКБ-10</th>
+                <th className="border px-3 py-2">Поступление</th>
+                <th className="border px-3 py-2">Выписка</th>
+                <th className="border px-3 py-2">ЦАХ</th>
+                <th className="border px-3 py-2">Врач</th>
+                <th className="border px-3 py-2">Медсестра</th>
+                <th className="border px-3 py-2">Статус</th>
               </tr>
-            ))}
-          </tbody>
+            </thead>
+            <tbody>
+              {histories.map((h) => (
+                <tr key={h.id} className="hover:bg-gray-50">
+                  <td className="border px-3 py-2 text-center">{h.history_number}</td>
+                  <td className="border px-3 py-2">{h.full_name}</td>
+                  <td className="border px-3 py-2">{formatDate(h.birth_date)}</td>
+                  <td className="border px-3 py-2 truncate max-w-[12rem]">{h.address}</td>
+                  <td className="border px-3 py-2 truncate max-w-[14rem]">{h.diagnosis}</td>
+                  <td className="border px-3 py-2">{h.icd10_code}</td>
+                  <td className="border px-3 py-2">{formatDate(h.admission_date)}</td>
+                  <td className="border px-3 py-2">{formatDate(h.discharge_date)}</td>
+                  <td className="border px-3 py-2">{h.cax_code?.cax_name}</td>
+                  <td className="border px-3 py-2">{h.doctor?.full_name}</td>
+                  <td className="border px-3 py-2">{h.nurse?.full_name}</td>
+                  <td className="border px-3 py-2">{h.cancelled || "Активна"}</td>
+                </tr>
+              ))}
+            </tbody>
         </table>
       </div>
     )}
