@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Staff from "./pages/Staff";
 import History from "./pages/History";
 import Navbar from "./components/Navbar";
+import Mes from "./pages/Mes";
 import "./App.css";
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/staff" element={<Staff />} />
         <Route path="/history" element={<History />} />
+        <Route path="/mes" element={<Mes />} />
       </Routes>
     </BrowserRouter>
   );

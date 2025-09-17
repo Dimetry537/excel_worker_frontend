@@ -1,6 +1,5 @@
 import "../App.css";
-import DoctorForm from "../components/DoctorForm";
-import NurseForm from "../components/NurseForm";
+import CaxCodeForm from "../components/CaxCodesForm";
 
 export default function Staff() {
   return (
@@ -8,10 +7,7 @@ export default function Staff() {
       <h1 className="text-3xl font-bold mb-8 text-center">Сотрудники</h1>
       <div className="flex justify-start gap-10">
         <div className="w-auto">
-          <DoctorForm />
-        </div>
-        <div className="w-center">
-          <NurseForm />
+          <CaxCodeForm />
         </div>
       </div>
     </div>
