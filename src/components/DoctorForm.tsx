@@ -72,22 +72,20 @@ export default function DoctorForm() {
     : doctors.filter((doc) => doc.is_active);
 
   return (
-    <div className="bg-gray-100 px-2 pt-4 h-[33vh]">
-      <div className="bg-green-200 rounded-2xl shadow-lg p-6 w-96">
-        <h2 className="text-xl font-bold mb-3 text-blue-800 text-center">
+    <div>
+      <div>
+        <h2>
           {editingId ? "Редактировать врача" : "Добавить врача"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex gap-2 mb-2">
+        <form onSubmit={handleSubmit}>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="ФИО врача"
           />
           <button
             type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold px-3 py-2 rounded-lg"
           >
             {editingId ? "Сохранить" : "Добавить"}
           </button>
@@ -98,15 +96,14 @@ export default function DoctorForm() {
                 setEditingId(null);
                 setName("");
               }}
-              className="bg-gray-500 hover:bg-gray-600 text-white text-lg font-semibold px-3 py-2 rounded-lg"
             >
               Отмена
             </button>
           )}
         </form>
 
-        <div className="flex justify-between items-center mb-2">
-          <label className="flex items-center gap-1 text-sm">
+        <div>
+          <label>
             <input
               type="checkbox"
               checked={showInactive}
@@ -116,31 +113,25 @@ export default function DoctorForm() {
           </label>
         </div>
 
-        <ul className="space-y-2">
+        <ul>
           {filteredDoctors.map((doc) => (
             <li
               key={doc.id}
-              className={`flex justify-between items-center border-b pb-1 ${
-                !doc.is_active ? "opacity-50" : ""
-              }`}
             >
-              <span className="text-sm">{doc.full_name}</span>
-              <div className="space-x-4">
+              <span>{doc.full_name}</span>
+              <div>
                 <button
                   onClick={() => handleEdit(doc)}
-                  className="text-yellow-600 hover:underline text-lg"
                 >
                   ✏️ Редактировать
                 </button>
                 <button
                   onClick={() => handleToggleActive(doc.id)}
-                  className="text-blue-600 hover:underline text-lg"
                 >
                   {doc.is_active ? "🙈 Скрыть" : "👁 Показать"}
                 </button>
                 <button
                   onClick={() => handleDelete(doc.id)}
-                  className="text-red-600 hover:underline text-lg"
                 >
                   🗑 Удалить
                 </button>

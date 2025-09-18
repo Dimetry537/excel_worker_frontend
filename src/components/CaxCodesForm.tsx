@@ -4,6 +4,7 @@ import {
   getCaxCodes,
   updateCaxCode,
   deleteCaxCode,
+  toggleCaxCodeActive,
 } from "../api/caxCodes";
 import type { CaxCode } from "../api/caxCodes";
 
@@ -13,13 +14,16 @@ export default function CaxCodesForm() {
   const [description, setDescription] = useState<string>("");
   const [quantityOfDays, setQuantityOfDays] = useState<number | "">("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [message, setMessage] = useState<string>("");
+  const [showInactive, setShowInactive] = useState<boolean>(false);
 
   const fetchCaxCodes = async () => {
     try {
       const data = await getCaxCodes();
       setCodes(data);
+      setMessage("");
     } catch (error) {
-      console.error("Ошибка загрузки ЦАХ:", error);
+      setMessage("Ошибка загрузки ЦАХ: " + (error instanceof Error ? error.message : "Неизвестная ошибка"));
     }
   };
 
@@ -31,11 +35,11 @@ export default function CaxCodesForm() {
     e.preventDefault();
 
     if (code === "" || isNaN(Number(code))) {
-      alert("Введите числовой код тарифа");
+      setMessage("Введите числовой код тарифа");
       return;
     }
     if (quantityOfDays === "" || isNaN(Number(quantityOfDays)) || Number(quantityOfDays) < 0) {
-      alert("Введите корректное количество дней госпитализации");
+      setMessage("Введите корректное количество дней госпитализации");
       return;
     }
 
@@ -47,16 +51,18 @@ export default function CaxCodesForm() {
       };
       if (editingId !== null) {
         await updateCaxCode(editingId, payload);
+        setMessage("Тариф успешно обновлен");
         setEditingId(null);
       } else {
         await createCaxCode(payload);
+        setMessage("Тариф успешно добавлен");
       }
       setCode("");
       setDescription("");
       setQuantityOfDays("");
       await fetchCaxCodes();
     } catch (error) {
-      console.error("Ошибка при сохранении:", error);
+      setMessage("Ошибка при сохранении: " + (error instanceof Error ? error.message : "Неизвестная ошибка"));
     }
   };
 
@@ -65,39 +71,57 @@ export default function CaxCodesForm() {
     setCode(cax.cax_code);
     setDescription(cax.cax_name);
     setQuantityOfDays(cax.quantity_of_days);
+    setMessage("");
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("Удалить ЦАХ?")) return;
     try {
-      await deleteCaxCode(id);
+      const deleted = await deleteCaxCode(id);
+      if (!deleted.is_active) {
+        setMessage("Код не удален, так как связан с медицинскими историями. Код переведен в статус 'неактивный'.");
+      } else {
+        setMessage("Тариф успешно удален");
+      }
       await fetchCaxCodes();
     } catch (error) {
-      console.error("Ошибка при удалении:", error);
+      const errorMessage = error instanceof Error ? error.message : "Неизвестная ошибка";
+      if (errorMessage.includes("400")) {
+        setMessage("Код не удален, так как связан с медицинскими историями. Код переведен в статус 'неактивный'.");
+        await fetchCaxCodes();
+      } else {
+        setMessage("Ошибка при удалении: " + errorMessage);
+      }
+    }
+  };
+
+  const handleToggleActive = async (id: number) => {
+    try {
+      const toggled = await toggleCaxCodeActive(id);
+      setMessage(`Тариф ${toggled.is_active ? "активирован" : "деактивирован"}`);
+      await fetchCaxCodes();
+    } catch (error) {
+      setMessage("Ошибка при переключении статуса: " + (error instanceof Error ? error.message : "Неизвестная ошибка"));
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-8 w-full">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8 mx-auto">
-        <h2 className="text-2xl font-bold mb-6 text-blue-800 text-center">
-          {editingId ? "Редактировать тариф ЦАХ" : "Добавить тариф ЦАХ"}
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4 mb-6">
+    <div>
+      <div>
+        <h2>{editingId ? "Редактировать тариф ЦАХ" : "Добавить тариф ЦАХ"}</h2>
+        {message && <p>{message}</p>}
+        <form onSubmit={handleSubmit}>
           <input
             type="number"
             value={code}
             onChange={(e) =>
               setCode(e.target.value === "" ? "" : Number(e.target.value))
             }
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
             placeholder="Код тарифа"
           />
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
             placeholder="Описание тарифа"
           />
           <input
@@ -106,47 +130,46 @@ export default function CaxCodesForm() {
             onChange={(e) =>
               setQuantityOfDays(e.target.value === "" ? "" : Number(e.target.value))
             }
-            className="w-full border border-gray-300 rounded-lg px-4 py-2"
             placeholder="Количество дней госпитализации"
             min={0}
           />
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition-shadow"
-          >
+          <button type="submit">
             {editingId ? "Сохранить" : "Добавить"}
           </button>
         </form>
-
-        <ul className="space-y-3">
-          {codes.map((cax) => (
-            <li
-              key={cax.id}
-              className="flex justify-between items-center border-b pb-2"
-            >
-              <div>
-                <span className="font-medium">{cax.cax_code}</span> —{" "}
-                <span>{cax.cax_name}</span> —{" "}
-                <span>Дней госпитализации: {cax.quantity_of_days}</span>
-              </div>
-              <div className="space-x-3">
-                <button
-                  type="button"
-                  onClick={() => handleEdit(cax)}
-                  className="text-yellow-600 hover:underline"
-                >
-                  ✏️ Редактировать
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(cax.id)}
-                  className="text-red-600 hover:underline"
-                >
-                  🗑 Удалить
-                </button>
-              </div>
-            </li>
-          ))}
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+            Показать скрытые
+          </label>
+        </div>
+        <ul>
+          {codes
+            .filter((cax) => showInactive || cax.is_active)
+            .map((cax) => (
+              <li key={cax.id}>
+                <div>
+                  <span>{cax.cax_code}</span> — <span>{cax.cax_name}</span> —{" "}
+                  <span>Дней госпитализации: {cax.quantity_of_days}</span> —{" "}
+                  <span>Статус: {cax.is_active ? "Активен" : "Неактивен"}</span>
+                </div>
+                <div>
+                  <button type="button" onClick={() => handleEdit(cax)}>
+                    ✏️ Редактировать
+                  </button>
+                  <button type="button" onClick={() => handleDelete(cax.id)}>
+                    🗑 Удалить
+                  </button>
+                  <button type="button" onClick={() => handleToggleActive(cax.id)}>
+                    🔄 {cax.is_active ? "Деактивировать" : "Активировать"}
+                  </button>
+                </div>
+              </li>
+            ))}
         </ul>
       </div>
     </div>
