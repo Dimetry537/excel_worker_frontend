@@ -9,6 +9,9 @@ export default function Home() {
   const [fullName, setFullName] = useState("");
   const [admissionDate, setAdmissionDate] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [sortColumn, setSortColumn] = useState<keyof MedicalHistory | "cax_code.cax_name" | "doctor.full_name" | "nurse.full_name" | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [isSorted, setIsSorted] = useState(false);
 
   const fetchHistories = async () => {
     setLoading(true);
@@ -54,6 +57,76 @@ export default function Home() {
       }
     }
   };
+
+  const handleSort = (column: keyof MedicalHistory | "cax_code.cax_name" | "doctor.full_name" | "nurse.full_name") => {
+    if (sortColumn === column && isSorted) {
+      if (sortDirection === "asc") {
+        setSortDirection("desc");
+      } else {
+        setSortColumn(null);
+        setIsSorted(false);
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+      setIsSorted(true);
+    }
+  };
+
+  const sortedHistories = isSorted && sortColumn ? [...histories].sort((a, b) => {
+    let valueA: string | number | undefined;
+    let valueB: string | number | undefined;
+
+    switch (sortColumn) {
+      case "cax_code.cax_name":
+        valueA = a.cax_code?.cax_name || "";
+        valueB = b.cax_code?.cax_name || "";
+        break;
+      case "doctor.full_name":
+        valueA = a.doctor?.full_name || "";
+        valueB = b.doctor?.full_name || "";
+        break;
+      case "nurse.full_name":
+        valueA = a.nurse?.full_name || "";
+        valueB = b.nurse?.full_name || "";
+        break;
+      case "cancelled":
+        valueA = a.cancelled || "";
+        valueB = b.cancelled || "";
+        break;
+      case "history_number":
+      case "id":
+        valueA = a[sortColumn];
+        valueB = b[sortColumn];
+        break;
+      case "full_name":
+      case "address":
+      case "diagnosis":
+      case "icd10_code":
+      case "admission_date":
+      case "discharge_date":
+      case "birth_date":
+        valueA = a[sortColumn] || "";
+        valueB = b[sortColumn] || "";
+        break;
+      default:
+        valueA = "";
+        valueB = "";
+        break;
+    }
+
+    if (typeof valueA === "number" && typeof valueB === "number") {
+      return sortDirection === "asc" ? valueA - valueB : valueB - valueA;
+    }
+    if (sortColumn === "admission_date" || sortColumn === "discharge_date" || sortColumn === "birth_date") {
+      const dateA = valueA ? new Date(valueA).getTime() : 0;
+      const dateB = valueB ? new Date(valueB).getTime() : 0;
+      return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+    }
+    return sortDirection === "asc"
+      ? String(valueA).localeCompare(String(valueB), "ru")
+      : String(valueB).localeCompare(String(valueA), "ru");
+  }) : histories;
 
   useEffect(() => {
     fetchHistories();
@@ -126,23 +199,83 @@ export default function Home() {
           <table className="table-auto border-collapse border border-gray-300 max-w-5xl mx-auto">
             <thead className="bg-gray-100">
               <tr>
-                <th className="border px-3 py-2">№ истории</th>
-                <th className="border px-3 py-2">ФИО</th>
-                <th className="border px-3 py-2">Дата рождения</th>
-                <th className="border px-3 py-2">Адрес</th>
-                <th className="border px-3 py-2">Диагноз</th>
-                <th className="border px-3 py-2">Код МКБ-10</th>
-                <th className="border px-3 py-2">Поступление</th>
-                <th className="border px-3 py-2">Выписка</th>
-                <th className="border px-3 py-2">ЦАХ</th>
-                <th className="border px-3 py-2">Врач</th>
-                <th className="border px-3 py-2">Медсестра</th>
-                <th className="border px-3 py-2">Статус</th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("history_number")}
+                >
+                  № истории {sortColumn === "history_number" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("full_name")}
+                >
+                  ФИО {sortColumn === "full_name" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("birth_date")}
+                >
+                  Дата рождения {sortColumn === "birth_date" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("address")}
+                >
+                  Адрес {sortColumn === "address" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("diagnosis")}
+                >
+                  Диагноз {sortColumn === "diagnosis" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("icd10_code")}
+                >
+                  Код МКБ-10 {sortColumn === "icd10_code" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("admission_date")}
+                >
+                  Поступление {sortColumn === "admission_date" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("discharge_date")}
+                >
+                  Выписка {sortColumn === "discharge_date" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("cax_code.cax_name")}
+                >
+                  ЦАХ {sortColumn === "cax_code.cax_name" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("doctor.full_name")}
+                >
+                  Врач {sortColumn === "doctor.full_name" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("nurse.full_name")}
+                >
+                  Медсестра {sortColumn === "nurse.full_name" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  className="border px-3 py-2 cursor-pointer"
+                  onClick={() => handleSort("cancelled")}
+                >
+                  Статус {sortColumn === "cancelled" && isSorted && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
                 <th className="border px-3 py-2">Действия</th>
               </tr>
             </thead>
             <tbody>
-              {histories.map((h) => (
+              {sortedHistories.map((h) => (
                 <tr key={h.id} className="hover:bg-gray-50">
                   <td className="border px-3 py-2 text-center">{h.history_number}</td>
                   <td className="border px-3 py-2">{h.full_name}</td>
