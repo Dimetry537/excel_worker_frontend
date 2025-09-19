@@ -54,6 +54,12 @@ export interface MedicalHistory {
   };
 }
 
+export interface Patient {
+  pname: string;
+  birthdate: string;
+  address: string;
+}
+
 export async function createMedicalHistory(data: MedicalHistoryCreate) {
   return api("/medical_history/", {
     method: "POST",
@@ -82,4 +88,33 @@ export async function getDoctors(): Promise<Doctor[]> {
 
 export async function getNurses(): Promise<Nurse[]> {
   return api<Nurse[]>("/nurses");
+}
+
+export async function cancelMedicalHistory(historyId: number): Promise<MedicalHistory> {
+  return api<MedicalHistory>(`/medical_history/${historyId}/cancel`, {
+    method: "POST",
+  });
+}
+
+export async function reactivateMedicalHistory(historyId: number): Promise<MedicalHistory> {
+  return api<MedicalHistory>(`/medical_history/${historyId}/reactivate`, {
+    method: "POST",
+  });
+}
+
+export async function searchPatients(
+  lastname?: string,
+  firstname?: string,
+  secondname?: string,
+  birthdate?: string,
+  address?: string
+): Promise<Patient[] | { error: string }> {
+  const params = new URLSearchParams();
+  if (lastname) params.append("lastname", lastname);
+  if (firstname) params.append("firstname", firstname);
+  if (secondname) params.append("secondname", secondname);
+  if (birthdate) params.append("birthdate", birthdate);
+  if (address) params.append("adress", address);
+
+  return api<Patient[] | { error: string }>(`/oracle/patient-search?${params.toString()}`);
 }
