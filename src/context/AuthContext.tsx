@@ -1,29 +1,13 @@
+// src/context/AuthContext.tsx
 import {
-  createContext,
   useState,
   useEffect,
   ReactNode,
   memo,
 } from 'react';
-import { api, setTokens, clearTokens } from '@/api/client';
-import { loginApi } from '@/api/client';
-
-
-export interface UserRead {
-  id: number;
-  username: string;
-  is_active: boolean;
-  roles: Array<{ id: number; name: string }>;
-}
-
-interface AuthContextType {
-  user: UserRead | null;
-  loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { api, setTokens, clearTokens, loginApi } from '@/api/client';
+import { toast } from 'sonner';
+import { AuthContext, type UserRead, type AuthContextType } from '@/context/auth-types';
 
 const AuthProviderBase = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserRead | null>(null);
@@ -73,17 +57,28 @@ const AuthProviderBase = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (username: string, password: string) => {
-    const tokens = await loginApi(username, password);
+    toast.loading('Входим в систему...', { id: 'login' });
 
-    setTokens(tokens.access_token, tokens.refresh_token);
-    localStorage.setItem('access_token', tokens.access_token);
-    localStorage.setItem('refresh_token', tokens.refresh_token);
+    try {
+      const tokens = await loginApi(username, password);
 
-    const me = await api<UserRead>('/auth/me');
-    setUser(me);
+      setTokens(tokens.access_token, tokens.refresh_token);
+      localStorage.setItem('access_token', tokens.access_token);
+      localStorage.setItem('refresh_token', tokens.refresh_token);
+
+      const me = await api<UserRead>('/auth/me');
+      setUser(me);
+
+      toast.success(`Добро пожаловать, ${me.username}!`, { id: 'login' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Неизвестная ошибка';
+      toast.error(message || 'Неверный логин или пароль', { id: 'login' });
+      throw err;
+    }
   };
 
   const logout = () => {
+    toast.success('Вы вышли из системы');
     clearTokens();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');

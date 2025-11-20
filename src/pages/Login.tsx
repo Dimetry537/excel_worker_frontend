@@ -1,84 +1,67 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
-const schema = z.object({
-  username: z.string().min(1, 'Логин обязателен'),
-  password: z.string().min(1, 'Пароль обязателен'),
-});
-
-type FormData = z.infer<typeof schema>;
-
 export default function Login() {
-  const { login, loading: authLoading } = useAuth();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({
-    resolver: zodResolver(schema),
-  });
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username || !password) return;
 
-  const onSubmit = async (data: FormData) => {
-    await login(data.username, data.password);
-    navigate('/');
+    setLoading(true);
+    try {
+      await login(username, password);
+      navigate('/');
+    } catch {
+      // toast уже покажет ошибку из AuthContext
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-xl font-medium text-gray-700">Загрузка...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Excel-Worker</h1>
-          <p className="mt-2 text-gray-600">Вход в систему</p>
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
+        <h2 className="mb-8 text-center text-2xl font-bold">Вход в Excel-Worker</h2>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={onSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Логин</label>
             <input
-              {...register('username')}
-              autoFocus
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-              placeholder="admin"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              required
+              disabled={loading}
             />
-            {errors.username && <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">Пароль</label>
             <input
-              {...register('password')}
               type="password"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              required
+              disabled={loading}
             />
-            {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
           </div>
 
           <button
             type="submit"
-            disabled={isSubmitting || authLoading}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 py-3 font-medium text-white transition hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={loading}
+            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {isSubmitting ? 'Входим...' : 'Войти'}
+            {loading ? 'Входим...' : 'Войти'}
           </button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-gray-500">
-          demo: admin / admin
-        </div>
       </div>
     </div>
   );
