@@ -1,5 +1,5 @@
 const API_BASE = import.meta.env.VITE_API_URL;
-if (!API_BASE) throw new Error('VITE_API_URL не задан в .env!');
+if (!API_BASE) throw new Error("VITE_API_URL не задан в .env!");
 
 class ApiError extends Error {
   status: number;
@@ -7,7 +7,7 @@ class ApiError extends Error {
 
   constructor(message: string, status: number, detail?: string) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.status = status;
     this.detail = detail;
   }
@@ -33,30 +33,45 @@ export const clearTokens = () => {
 
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token!);
-    }
+    if (error) prom.reject(error);
+    else prom.resolve(token!);
   });
   failedQueue = [];
 };
 
 export async function api<T>(
   path: string,
-  options: Omit<RequestInit, 'body'> & { body?: unknown; noAuth?: boolean } = {}
+  options: Omit<RequestInit, "body"> & {
+    body?: unknown;
+    noAuth?: boolean;
+    query?: Record<string, string | number | boolean | undefined>;
+  } = {}
 ): Promise<T> {
-  const { body, noAuth = false, ...restOptions } = options;
+  const { body, noAuth = false, query, ...restOptions } = options;
+
+  let url = `${API_BASE}${path}`;
+
+  if (query) {
+    const params = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        params.append(key, String(value));
+      }
+    });
+    if (params.toString()) {
+      url += (url.includes("?") ? "&" : "?") + params.toString();
+    }
+  }
 
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 
   if (!noAuth && accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
+    headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  let res = await fetch(`${API_BASE}${path}`, {
+  let res = await fetch(url, {
     ...restOptions,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -67,8 +82,8 @@ export async function api<T>(
       const newAccessToken = await new Promise<string>((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       });
-      headers['Authorization'] = `Bearer ${newAccessToken}`;
-      res = await fetch(`${API_BASE}${path}`, {
+      headers["Authorization"] = `Bearer ${newAccessToken}`;
+      res = await fetch(url, {
         ...restOptions,
         headers,
         body: body ? JSON.stringify(body) : undefined,
@@ -77,19 +92,19 @@ export async function api<T>(
       isRefreshing = true;
       try {
         const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
 
-        if (!refreshRes.ok) throw new ApiError('Не удалось обновить токен', refreshRes.status);
+        if (!refreshRes.ok) throw new ApiError("Не удалось обновить токен", refreshRes.status);
 
         const { access_token, refresh_token } = await refreshRes.json();
         setTokens(access_token, refresh_token || refreshToken!);
         processQueue(null, access_token);
 
-        headers['Authorization'] = `Bearer ${access_token}`;
-        res = await fetch(`${API_BASE}${path}`, {
+        headers["Authorization"] = `Bearer ${access_token}`;
+        res = await fetch(url, {
           ...restOptions,
           headers,
           body: body ? JSON.stringify(body) : undefined,
@@ -97,7 +112,7 @@ export async function api<T>(
       } catch (err) {
         processQueue(err as Error);
         clearTokens();
-        window.location.href = '/login';
+        window.location.href = "/login";
         throw err;
       } finally {
         isRefreshing = false;
@@ -106,15 +121,13 @@ export async function api<T>(
   }
 
   if (!res.ok) {
-    let msg = 'Ошибка сервера';
+    let msg = "Ошибка сервера";
     let detail: string | undefined;
 
     try {
-      const data = await res.json().catch(() => ({})); // если не JSON — вернёт {}
-
+      const data = await res.json().catch(() => ({}));
       if (data?.detail) {
-        msg =
-          typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+        msg = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
         detail = msg;
       }
     } catch {
@@ -125,8 +138,7 @@ export async function api<T>(
       }
     }
 
-    const error = new ApiError(msg, res.status, detail);
-    throw error;
+    throw new ApiError(msg, res.status, detail);
   }
 
   if (res.status === 204 || res.status === 205) {
@@ -138,18 +150,18 @@ export async function api<T>(
 
 export const loginApi = async (username: string, password: string) => {
   const formData = new FormData();
-  formData.append('username', username);
-  formData.append('password', password);
+  formData.append("username", username);
+  formData.append("password", password);
 
   const res = await fetch(`${API_BASE}/auth/login`, {
-    method: 'POST',
+    method: "POST",
     body: formData,
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Ошибка авторизации');
+    throw new Error(err.detail || "Ошибка авторизации");
   }
 
-  return res.json(); // → { access_token, refresh_token }
+  return res.json();
 };

@@ -4,6 +4,7 @@ import {
   cancelMedicalHistory,
   reactivateMedicalHistory,
 } from "../api/medicalHistory";
+import { api } from "@/api/client";
 import type { MedicalHistoryRead } from "../api/medicalHistory";
 import { formatDate } from "../utils/formatDate";
 
@@ -123,6 +124,69 @@ export default function Home() {
     return sortDirection === "asc" ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
   });
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleGenerateReport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    setError(null);
+
+    try {
+      const resp = await api<{ task_id: string }>("/medical_history/export", {
+        method: "POST",
+        query: {
+          full_name: fullName.trim() || undefined,
+          start_date: startDate.trim() || undefined,
+          end_date: endDate.trim() || undefined,
+        },
+      });
+
+      const taskId = resp.task_id;
+      alert("Отчёт формируется... Файл скачается автоматически");
+      
+      interface TaskStatus {
+        state: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE";
+        result?: string;
+      }
+
+      const pollStatus = async () => {
+        try {
+          const statusData = await api<TaskStatus>(`/medical_history/tasks/status/${taskId}`);
+
+          if (statusData.state === "SUCCESS" && statusData.result) {
+            const filePath = statusData.result.startsWith("/")
+              ? statusData.result
+              : `/${statusData.result}`;
+
+            const downloadUrl = `${import.meta.env.VITE_API_URL}${filePath}`;
+
+            const link = document.createElement("a");
+            link.href = downloadUrl;
+            link.download = filePath.split("/").pop() || "medical_report.xlsx";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            alert("Отчёт успешно скачан!");
+            setExporting(false);
+          } else if (statusData.state === "FAILURE") {
+            throw new Error("Ошибка генерации отчёта на сервере");
+          } else {
+            setTimeout(pollStatus, 2000);
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Ошибка при проверке статуса задачи");
+          setExporting(false);
+        }
+      };
+
+      pollStatus();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Не удалось запустить экспорт");
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-full mx-auto">
       <h1 className="text-3xl font-bold mb-6">Истории болезни</h1>
@@ -186,6 +250,28 @@ export default function Home() {
           {error}
         </div>
       )}
+
+      <button
+        onClick={handleGenerateReport}
+        disabled={exporting}
+        className={`min-w-[240px] px-6 py-2 rounded font-semibold transition flex items-center justify-center gap-2 shadow-md ${
+          exporting
+            ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+            : "bg-emerald-600 hover:bg-emerald-700 text-white"
+        }`}
+      >
+        {exporting ? (
+          <>
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" className="opacity-25" />
+              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75" />
+            </svg>
+            Формируется...
+          </>
+        ) : (
+          <>📊 Скачать отчёт (Excel)</>
+        )}
+      </button>
 
       {/* Таблица с полной жирной сеткой (как в Excel) */}
       {loading ? (
