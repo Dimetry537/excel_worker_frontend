@@ -3,24 +3,35 @@ import { api } from "./client";
 export interface CaxCode {
   id: number;
   cax_name: string;
+  is_active?: boolean;
 }
 
 export interface Doctor {
   id: number;
   full_name: string;
+  is_active?: boolean;
 }
 
 export interface Nurse {
   id: number;
   full_name: string;
+  is_active?: boolean;
 }
 
+export interface Patient {
+  pname: string;
+  birthdate: string;
+  address: string | null;
+  lastworkplace: string | null;
+  position: string | null;
+}
 export interface MedicalHistoryCreate {
   admission_date: string;
   discharge_date?: string;
   full_name: string;
   birth_date: string;
   address: string;
+  workplace?: string;
   diagnosis: string;
   icd10_code: string;
   cax_code_id: number;
@@ -32,32 +43,16 @@ export interface MedicalHistory {
   id: number;
   history_number: number;
   admission_date: string;
-  discharge_date?: string;
+  discharge_date?: string | null;
   full_name: string;
   birth_date: string;
   address: string;
   diagnosis: string;
   icd10_code: string;
   cancelled?: string | null;
-
-  doctor: {
-    id: number;
-    full_name: string;
-  };
-  nurse: {
-    id: number;
-    full_name: string;
-  };
-  cax_code: {
-    id: number;
-    cax_name: string;
-  };
-}
-
-export interface Patient {
-  pname: string;
-  birthdate: string;
-  address: string;
+  doctor: { id: number; full_name: string };
+  nurse: { id: number; full_name: string };
+  cax_code: { id: number; cax_name: string };
 }
 
 export async function createMedicalHistory(data: MedicalHistoryCreate) {
@@ -90,31 +85,37 @@ export async function getNurses(): Promise<Nurse[]> {
   return api<Nurse[]>("/nurses");
 }
 
-export async function cancelMedicalHistory(historyId: number): Promise<MedicalHistory> {
-  return api<MedicalHistory>(`/medical_history/${historyId}/cancel`, {
-    method: "POST",
-  });
+export async function cancelMedicalHistory(historyId: number) {
+  return api(`/medical_history/${historyId}/cancel`, { method: "POST" });
 }
 
-export async function reactivateMedicalHistory(historyId: number): Promise<MedicalHistory> {
-  return api<MedicalHistory>(`/medical_history/${historyId}/reactivate`, {
-    method: "POST",
-  });
+export async function reactivateMedicalHistory(historyId: number) {
+  return api(`/medical_history/${historyId}/reactivate`, { method: "POST" });
 }
 
-export async function searchPatients(
-  lastname?: string,
-  firstname?: string,
-  secondname?: string,
-  birthdate?: string,
-  address?: string
-): Promise<Patient[] | { error: string }> {
-  const params = new URLSearchParams();
-  if (lastname) params.append("lastname", lastname);
-  if (firstname) params.append("firstname", firstname);
-  if (secondname) params.append("secondname", secondname);
-  if (birthdate) params.append("birthdate", birthdate);
-  if (address) params.append("adress", address);
+export async function searchPatients(params: {
+  lastname?: string;
+  firstname?: string;
+  secondname?: string;
+  birthdate?: string;
+  address?: string;
+}): Promise<Patient[] | { error: string }> {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) searchParams.append(key, value);
+  });
 
-  return api<Patient[] | { error: string }>(`/oracle/patient-search?${params.toString()}`);
+  return api<Patient[] | { error: string }>(
+    `/oracle/patient-search?${searchParams.toString()}`
+  );
+}
+
+export async function suggestDischargeDate(data: {
+  admission_date: string;
+  cax_code_id: number;
+}): Promise<{ discharge_date: string }> {
+  return api("/dates/suggest_discharge_date", {
+    method: "POST",
+    body: data,
+  });
 }

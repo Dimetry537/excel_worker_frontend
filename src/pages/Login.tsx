@@ -25,41 +25,63 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
-        <h2 className="mb-8 text-center text-2xl font-bold">Вход в Excel-Worker</h2>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md space-y-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+            Вход в Excel-Worker
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Введите логин и пароль
+          </p>
+        </div>
 
-        <form onSubmit={onSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Логин</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Пароль</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-              required
-              disabled={loading}
-            />
+        <form onSubmit={onSubmit} className="mt-8 space-y-6">
+          <div className="space-y-4 rounded-md shadow-sm">
+            <div>
+              <label htmlFor="username" className="sr-only">
+                Логин
+              </label>
+              <input
+                id="username"
+                type="text"
+                autoComplete="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.trim())}
+                className="relative block w-full rounded-t-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                placeholder="Логин"
+                required
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Пароль
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="relative block w-full rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                placeholder="Пароль"
+                required
+                disabled={loading}
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+            className="group relative flex w-full justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? 'Входим...' : 'Войти'}
+            {loading ? (
+              <span>Входим...</span>
+            ) : (
+              'Войти'
+            )}
           </button>
         </form>
       </div>
