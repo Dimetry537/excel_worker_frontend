@@ -4,19 +4,35 @@ import {
   cancelMedicalHistory,
   reactivateMedicalHistory,
 } from "../api/medicalHistory";
+import { format, startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { api } from "@/api/client";
 import type { MedicalHistoryRead } from "../api/medicalHistory";
 import { formatDate } from "../utils/formatDate";
 
+const PAGE_SIZE = 50;
+
 export default function Home() {
-  const [histories, setHistories] = useState<MedicalHistoryRead[]>([]);
+  const [allHistories, setAllHistories] = useState<MedicalHistoryRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  // Текущий месяц по умолчанию
+  const today = new Date();
+  const firstDay = startOfMonth(today);
+  const lastDay = endOfMonth(today);
+
+  const defaultStartApi = formatISO(firstDay, { representation: "date" });
+  const defaultEndApi = formatISO(lastDay, { representation: "date" });
 
   const [fullName, setFullName] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDateApi, setStartDateApi] = useState(defaultStartApi);
+  const [endDateApi, setEndDateApi] = useState(defaultEndApi);
 
+  // Пагинация
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Сортировка
   type SortableField =
     | "history_number"
     | "patient_full_name"
@@ -31,41 +47,17 @@ export default function Home() {
   const [sortColumn, setSortColumn] = useState<SortableField | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  const getSortValue = (h: MedicalHistoryRead, column: SortableField): string | number | Date | null => {
-    switch (column) {
-      case "history_number":
-        return h.history_number;
-      case "patient_full_name":
-        return h.patient.full_name.toLowerCase();
-      case "admission_date":
-        return h.admission_date || "";
-      case "discharge_date":
-        return h.discharge_date || "";
-      case "diagnosis":
-        return h.diagnosis.toLowerCase();
-      case "icd10_code":
-        return h.icd10_code;
-      case "cax_code_name":
-        return h.cax_code?.cax_name?.toLowerCase() || "";
-      case "doctor_full_name":
-        return h.doctor?.full_name?.toLowerCase() || "";
-      case "nurse_full_name":
-        return h.nurse?.full_name?.toLowerCase() || "";
-      default:
-        return "";
-    }
-  };
-
   const fetchHistories = async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await getMedicalHistoriesFiltered({
         full_name: fullName.trim() || undefined,
-        start_date: startDate.trim() || undefined,
-        end_date: endDate.trim() || undefined,
+        start_date: startDateApi || undefined,
+        end_date: endDateApi || undefined,
       });
-      setHistories(data);
+      setAllHistories(data);
+      setCurrentPage(1);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Ошибка загрузки данных");
     } finally {
@@ -108,13 +100,26 @@ export default function Home() {
   };
 
   const getSortIcon = (col: SortableField) => {
-    if (sortColumn === col) {
-      return sortDirection === "asc" ? " ↑" : " ↓";
-    }
+    if (sortColumn === col) return sortDirection === "asc" ? " ↑" : " ↓";
     return "";
   };
 
-  const sortedHistories = [...histories].sort((a, b) => {
+  const getSortValue = (h: MedicalHistoryRead, column: SortableField) => {
+    switch (column) {
+      case "history_number": return h.history_number;
+      case "patient_full_name": return h.patient.full_name.toLowerCase();
+      case "admission_date": return h.admission_date || "";
+      case "discharge_date": return h.discharge_date || "";
+      case "diagnosis": return h.diagnosis.toLowerCase();
+      case "icd10_code": return h.icd10_code;
+      case "cax_code_name": return h.cax_code?.cax_name?.toLowerCase() || "";
+      case "doctor_full_name": return h.doctor?.full_name?.toLowerCase() || "";
+      case "nurse_full_name": return h.nurse?.full_name?.toLowerCase() || "";
+      default: return "";
+    }
+  };
+
+  const sorted = [...allHistories].sort((a, b) => {
     if (!sortColumn) return 0;
     const aVal = getSortValue(a, sortColumn);
     const bVal = getSortValue(b, sortColumn);
@@ -124,7 +129,15 @@ export default function Home() {
     return sortDirection === "asc" ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
   });
 
-  const [exporting, setExporting] = useState(false);
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const paginatedHistories = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const handleReset = () => {
+    setFullName("");
+    setStartDateApi(defaultStartApi);
+    setEndDateApi(defaultEndApi);
+    fetchHistories();
+  };
 
   const handleGenerateReport = async () => {
     if (exporting) return;
@@ -136,14 +149,14 @@ export default function Home() {
         method: "POST",
         query: {
           full_name: fullName.trim() || undefined,
-          start_date: startDate.trim() || undefined,
-          end_date: endDate.trim() || undefined,
+          start_date: startDateApi || undefined,
+          end_date: endDateApi || undefined,
         },
       });
 
       const taskId = resp.task_id;
       alert("Отчёт формируется... Файл скачается автоматически");
-      
+
       interface TaskStatus {
         state: "PENDING" | "PROGRESS" | "SUCCESS" | "FAILURE";
         result?: string;
@@ -154,10 +167,7 @@ export default function Home() {
           const statusData = await api<TaskStatus>(`/medical_history/tasks/status/${taskId}`);
 
           if (statusData.state === "SUCCESS" && statusData.result) {
-            const filePath = statusData.result.startsWith("/")
-              ? statusData.result
-              : `/${statusData.result}`;
-
+            const filePath = statusData.result.startsWith("/") ? statusData.result : `/${statusData.result}`;
             const downloadUrl = `${import.meta.env.VITE_API_URL}${filePath}`;
 
             const link = document.createElement("a");
@@ -168,7 +178,6 @@ export default function Home() {
             document.body.removeChild(link);
 
             alert("Отчёт успешно скачан!");
-            setExporting(false);
           } else if (statusData.state === "FAILURE") {
             throw new Error("Ошибка генерации отчёта на сервере");
           } else {
@@ -176,6 +185,7 @@ export default function Home() {
           }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Ошибка при проверке статуса задачи");
+        } finally {
           setExporting(false);
         }
       };
@@ -191,8 +201,8 @@ export default function Home() {
     <div className="p-6 max-w-full mx-auto">
       <h1 className="text-3xl font-bold mb-6">Истории болезни</h1>
 
-      {/* Фильтры */}
-      <div className="bg-white p-5 rounded-lg shadow mb-6 flex flex-wrap gap-4 items-end">
+      {/* Фильтры с календарями */}
+      <div className="bg-white p-5 rounded-lg shadow mb-6 flex flex-wrap gap-6 items-end">
         <div className="min-w-[250px]">
           <label className="block text-sm font-medium text-gray-700 mb-1">ФИО пациента</label>
           <input
@@ -203,48 +213,51 @@ export default function Home() {
             placeholder="Иванов Иван Иванович"
           />
         </div>
-        <div>
+
+        {/* Дата с — календарь */}
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-1">Дата поступления с</label>
           <input
-            type="text"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="01.01.2025 или 2025-01-01"
+            type="date"
+            value={startDateApi}
+            onChange={(e) => setStartDateApi(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 peer"
+            lang="ru"
           />
+          {!startDateApi && (
+            <span className="absolute left-3 top-9 text-gray-400 pointer-events-none peer-focus:hidden">
+              ДД.ММ.ГГГГ
+            </span>
+          )}
         </div>
-        <div>
+
+        {/* Дата по — календарь */}
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-1">по</label>
           <input
-            type="text"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="31.12.2025"
+            type="date"
+            value={endDateApi}
+            onChange={(e) => setEndDateApi(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 peer"
+            lang="ru"
           />
+          {!endDateApi && (
+            <span className="absolute left-3 top-9 text-gray-400 pointer-events-none peer-focus:hidden">
+              ДД.ММ.ГГГГ
+            </span>
+          )}
         </div>
+
         <div className="flex gap-3">
-          <button
-            onClick={fetchHistories}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-          >
+          <button onClick={fetchHistories} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
             Поиск
           </button>
-          <button
-            onClick={() => {
-              setFullName("");
-              setStartDate("");
-              setEndDate("");
-              fetchHistories();
-            }}
-            className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition"
-          >
-            Сброс
+          <button onClick={handleReset} className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition">
+            Сброс (текущий месяц)
           </button>
         </div>
       </div>
 
-      {/* Ошибка */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -254,7 +267,7 @@ export default function Home() {
       <button
         onClick={handleGenerateReport}
         disabled={exporting}
-        className={`min-w-[240px] px-6 py-2 rounded font-semibold transition flex items-center justify-center gap-2 shadow-md ${
+        className={`min-w-[240px] px-6 py-2 rounded font-semibold transition flex items-center justify-center gap-2 shadow-md mb-6 ${
           exporting
             ? "bg-gray-400 text-gray-700 cursor-not-allowed"
             : "bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -269,11 +282,37 @@ export default function Home() {
             Формируется...
           </>
         ) : (
-          <>📊 Скачать отчёт (Excel)</>
+          <>Скачать отчёт (Excel)</>
         )}
       </button>
 
-      {/* Таблица с полной жирной сеткой (как в Excel) */}
+      {/* Пагинация */}
+      {allHistories.length > 0 && (
+        <div className="flex justify-between items-center mb-4">
+          <div className="text-sm text-gray-600">
+            Показано {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, allHistories.length)} из {allHistories.length}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50 hover:bg-gray-400 transition"
+            >
+              ← Предыдущая
+            </button>
+            <span className="px-4 py-2">Страница {currentPage} из {totalPages}</span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50 hover:bg-gray-400 transition"
+            >
+              Следующая →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Таблица */}
       {loading ? (
         <div className="text-center py-12 text-gray-500">Загрузка...</div>
       ) : (
@@ -281,58 +320,40 @@ export default function Home() {
           <table className="min-w-full border-collapse">
             <thead className="bg-gray-100">
               <tr className="border-b-2 border-gray-300">
-                <th
-                  onClick={() => handleSort("history_number")}
-                  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300 last:border-r-0"
-                >
+                <th onClick={() => handleSort("history_number")} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300">
                   № истории{getSortIcon("history_number")}
                 </th>
-                <th
-                  onClick={() => handleSort("patient_full_name")}
-                  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300 last:border-r-0"
-                >
+                <th onClick={() => handleSort("patient_full_name")} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300">
                   Пациент{getSortIcon("patient_full_name")}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300 last:border-r-0">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300">
                   Дата рождения
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300 last:border-r-0">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300">
                   Адрес
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300 last:border-r-0">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300">
                   Диагноз
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300 last:border-r-0">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300">
                   МКБ-10
                 </th>
-                <th
-                  onClick={() => handleSort("admission_date")}
-                  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300 last:border-r-0"
-                >
+                <th onClick={() => handleSort("admission_date")} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300">
                   Поступление{getSortIcon("admission_date")}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300 last:border-r-0">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300">
                   Выписка
                 </th>
-                <th
-                  onClick={() => handleSort("cax_code_name")}
-                  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300 last:border-r-0"
-                >
+                <th onClick={() => handleSort("cax_code_name")} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300">
                   ЦАХ{getSortIcon("cax_code_name")}
                 </th>
-                <th
-                  onClick={() => handleSort("doctor_full_name")}
-                  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300 last:border-r-0"
-                >
+                <th onClick={() => handleSort("doctor_full_name")} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300">
                   Врач{getSortIcon("doctor_full_name")}
                 </th>
-                <th
-                  onClick={() => handleSort("nurse_full_name")}
-                  className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300 last:border-r-0"
-                >
+                <th onClick={() => handleSort("nurse_full_name")} className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition border-r border-gray-300">
                   Медсестра{getSortIcon("nurse_full_name")}
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300 last:border-r-0">
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-300">
                   Статус
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
@@ -341,54 +362,49 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {sortedHistories.length === 0 ? (
+              {paginatedHistories.length === 0 ? (
                 <tr>
                   <td colSpan={13} className="px-6 py-24 text-center text-gray-500 text-lg border-b border-gray-300">
                     Нет данных по заданным фильтрам
                   </td>
                 </tr>
               ) : (
-                sortedHistories.map((h, index) => (
-                  <tr
-                    key={h.id}
-                    className={`border-b border-gray-300 hover:bg-gray-50 transition ${
-                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                    }`}
-                  >
-                    <td className="px-6 py-4 text-sm font-semibold text-center text-gray-900 border-r border-gray-300 last:border-r-0">
+                paginatedHistories.map((h, index) => (
+                  <tr key={h.id} className={`border-b border-gray-300 hover:bg-gray-50 transition ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                    <td className="px-6 py-4 text-sm font-semibold text-center text-gray-900 border-r border-gray-300">
                       {h.history_number}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-300">
                       {h.patient.full_name}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-300">
                       {formatDate(h.patient.birth_date)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate border-r border-gray-300 last:border-r-0" title={h.patient.address}>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate border-r border-gray-300" title={h.patient.address}>
                       {h.patient.address}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate border-r border-gray-300 last:border-r-0" title={h.diagnosis}>
+                    <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate border-r border-gray-300" title={h.diagnosis}>
                       {h.diagnosis}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900 border-r border-gray-300">
                       {h.icd10_code}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
                       {formatDate(h.admission_date)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-sm text-gray-600 border-r border-gray-300">
                       {h.discharge_date ? formatDate(h.discharge_date) : "—"}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
                       {h.cax_code?.cax_name ?? "—"}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
                       {h.doctor?.full_name ?? "—"}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
                       {h.nurse?.full_name ?? "—"}
                     </td>
-                    <td className="px-6 py-4 text-center border-r border-gray-300 last:border-r-0">
+                    <td className="px-6 py-4 text-center border-r border-gray-300">
                       {h.cancelled ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">
                           Отменена

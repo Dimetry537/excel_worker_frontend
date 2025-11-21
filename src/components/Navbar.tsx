@@ -11,31 +11,59 @@ export default function Navbar() {
     return null;
   }
 
+  // Подсветка активной ссылки
+  const isActive = (path: string) => location.pathname.startsWith(path);
+
   return (
     <nav className="navbar bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-lg sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         {/* Левая часть — основные ссылки */}
-        <div className="flex items-center space-x-8">
-          <Link to="/" className="text-xl font-bold hover:text-blue-200 transition flex items-center gap-2">
-            🏠 Главная 
+        <div className="flex items-center space-x-14">
+          <Link 
+            to="/" 
+            className={`text-xl font-bold transition flex items-center gap-2 ${
+              isActive('/') && location.pathname === '/' ? 'text-yellow-300' : 'hover:text-blue-200'
+            }`}
+          >
+            🏠 Главная
           </Link>
           
-          <Link to="/staff" className="hover:text-blue-200 transition flex items-center gap-2">
-            👨‍⚕️👩‍⚕️ Сотрудники 
+          <Link 
+            to="/staff" 
+            className={`hover:text-blue-200 transition flex items-center gap-2 ${
+              isActive('/staff') ? 'text-yellow-300 font-semibold' : ''
+            }`}
+          >
+            👨‍⚕️👩‍⚕️ Сотрудники
           </Link>
 
-          <Link to="/mes" className="hover:text-blue-200 transition flex items-center gap-2">
-            📚 МЭСы 
+          <Link 
+            to="/mes" 
+            className={`hover:text-blue-200 transition flex items-center gap-2 ${
+              isActive('/mes') ? 'text-yellow-300 font-semibold' : ''
+            }`}
+          >
+            📚 МЭСы
           </Link>
 
-          <Link to="/history" className="hover:text-blue-200 transition flex items-center gap-2">
-            📄 История 
+          <Link 
+            to="/history" 
+            className={`hover:text-blue-200 transition flex items-center gap-2 ${
+              isActive('/history') ? 'text-yellow-300 font-semibold' : ''
+            }`}
+          >
+            📄 Создание новой истории
           </Link>
 
-          {/* Только для админа */}
+          {/* Только для админа — тоже с эмодзи */}
           {user?.roles?.includes('admin') && (
-            <Link to="/create-user" className="hover:text-blue-200 transition flex items-center gap-2">
-              Создать пользователя
+            <Link 
+              to="/create-user" 
+              className={`hover:text-blue-200 transition flex items-center gap-2 ${
+                isActive('/create-user') ? 'text-yellow-300 font-semibold' : ''
+              }`}
+            >
+              👤➕ Создать пользователя
             </Link>
           )}
         </div>
@@ -51,17 +79,17 @@ export default function Navbar() {
             </span>
             <button
               onClick={logout}
-              className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition font-medium"
+              className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition font-medium flex items-center gap-2"
             >
-              Выйти
+              🚪 Выйти
             </button>
           </div>
         ) : (
           <Link
             to="/login"
-            className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg transition font-medium"
+            className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg transition font-medium flex items-center gap-2"
           >
-            Войти
+            🔑 Войти
           </Link>
         )}
       </div>

@@ -1,20 +1,31 @@
 import { useState, useEffect } from "react";
 import {
   createMedicalHistory,
-  getCaxCodes,
-  getDoctors,
-  getNurses,
   searchPatients,
   suggestDischargeDate,
 } from "../api/medicalHistory";
-import type {
-  MedicalHistoryCreate,
-  Patient,
-  CaxCode,
-  Doctor,
-  Nurse,
-} from "../api/medicalHistory";
+import { getCaxCodes } from "../api/caxCodes";
+import { getDoctors } from "../api/doctors";
+import { getNurses } from "../api/nurses";
+
+import type { CaxCode } from "../api/caxCodes";
+import type { Personal } from "../api/personal";
+import type { OraclePatient } from "@/types/oraclePatients";
 import { toIsoDateSafe } from "@/utils/formatDate";
+
+interface MedicalHistoryCreatePayload {
+  admission_date: string;
+  discharge_date?: string | null;
+  full_name: string;
+  birth_date: string;
+  address: string;
+  workplace?: string | null;
+  diagnosis: string;
+  icd10_code: string;
+  cax_code_id: number;
+  doctor_id: number;
+  nurse_id: number;
+}
 
 export default function MedicalHistoryForm({
   onSuccess,
@@ -22,10 +33,10 @@ export default function MedicalHistoryForm({
   onSuccess?: () => void;
 }) {
   const [caxCodes, setCaxCodes] = useState<CaxCode[]>([]);
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [nurses, setNurses] = useState<Nurse[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [doctors, setDoctors] = useState<Personal[]>([]);
+  const [nurses, setNurses] = useState<Personal[]>([]);
+  const [patients, setPatients] = useState<OraclePatient[]>([]);
+  const [selectedPatient, setSelectedPatient] = useState<OraclePatient | null>(null);
 
   const [form, setForm] = useState({
     admission_date: "",
@@ -58,9 +69,9 @@ export default function MedicalHistoryForm({
   useEffect(() => {
     Promise.all([getCaxCodes(), getDoctors(), getNurses()])
       .then(([cax, docs, nurs]) => {
-        setCaxCodes(cax.filter((c) => c.is_active !== false));
-        setDoctors(docs.filter((d) => d.is_active !== false));
-        setNurses(nurs.filter((n) => n.is_active !== false));
+        setCaxCodes(cax);
+        setDoctors(docs);
+        setNurses(nurs);
       })
       .catch(() => setError("Ошибка загрузки справочников"));
   }, []);
@@ -75,6 +86,7 @@ export default function MedicalHistoryForm({
         .then((res) =>
           setForm((prev) => ({ ...prev, discharge_date: res.discharge_date }))
         )
+        .catch(() => {})
         .finally(() => setSuggestLoading(false));
     }
   }, [form.admission_date, form.cax_code_id]);
@@ -82,10 +94,14 @@ export default function MedicalHistoryForm({
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasValue = Object.values(searchParams).some((v) => v.trim());
-    if (!hasValue) return setSearchError("Заполните хотя бы одно поле");
+    if (!hasValue) {
+      setSearchError("Заполните хотя бы одно поле для поиска");
+      return;
+    }
 
     setSearchLoading(true);
     setSearchError(null);
+
     try {
       const result = await searchPatients(searchParams);
       if ("error" in result) {
@@ -95,13 +111,14 @@ export default function MedicalHistoryForm({
         setPatients(result);
       }
     } catch {
-      setSearchError("Ошибка поиска");
+      setSearchError("Ошибка соединения с Oracle");
+      setPatients([]);
     } finally {
       setSearchLoading(false);
     }
   };
 
-  const handleSelectPatient = (patient: Patient) => {
+  const handleSelectPatient = (patient: OraclePatient) => {
     const workplace = [patient.lastworkplace, patient.position]
       .filter(Boolean)
       .join(", ");
@@ -114,8 +131,15 @@ export default function MedicalHistoryForm({
       patient_address: patient.address || "",
       patient_workplace: workplace || "Не указано",
     }));
+
     setPatients([]);
-    setSearchParams({ lastname: "", firstname: "", secondname: "", birthdate: "", address: "" });
+    setSearchParams({
+      lastname: "",
+      firstname: "",
+      secondname: "",
+      birthdate: "",
+      address: "",
+    });
   };
 
   const handleChange = (
@@ -127,29 +151,32 @@ export default function MedicalHistoryForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPatient) return setError("Выберите пациента");
+    if (!selectedPatient) {
+      setError("Сначала выберите пациента из поиска");
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
-    const payload: MedicalHistoryCreate = {
+    const payload: MedicalHistoryCreatePayload = {
       admission_date: form.admission_date,
-      discharge_date: form.discharge_date || undefined,
+      discharge_date: form.discharge_date || null,
       full_name: form.patient_full_name,
       birth_date: toIsoDateSafe(form.patient_birth_date),
       address: form.patient_address,
-      workplace: form.patient_workplace === "Не указано" ? undefined : form.patient_workplace,
+      workplace:
+        form.patient_workplace === "Не указано" ? null : form.patient_workplace,
       diagnosis: form.diagnosis,
       icd10_code: form.icd10_code,
-      cax_code_id: form.cax_code_id,
-      doctor_id: form.doctor_id,
-      nurse_id: form.nurse_id,
+      cax_code_id: Number(form.cax_code_id),
+      doctor_id: Number(form.doctor_id),
+      nurse_id: Number(form.nurse_id),
     };
 
     try {
       await createMedicalHistory(payload);
       onSuccess?.();
-
       setForm({
         admission_date: "",
         discharge_date: "",
@@ -165,8 +192,9 @@ export default function MedicalHistoryForm({
       });
       setSelectedPatient(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Ошибка создания истории болезни";
-      setError(message);
+      const errorMessage =
+        err instanceof Error ? err.message : "Не удалось создать медицинскую историю";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

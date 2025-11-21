@@ -1,38 +1,32 @@
 import { api } from "./client";
+import type { Personal, PersonalCreateData } from "@/types/personal";
 
-export interface Doctor {
-    id: number;
-    full_name: string;
-    is_active: boolean;
+export async function getDoctors(): Promise<Personal[]> {
+    return api<Personal[]>('/doctors');
 }
 
-export async function getDoctors(): Promise<Doctor[]> {
-    return api<Doctor[]>('/doctors');
-}
-
-export async function createDoctor(data: {full_name: string}): Promise<Doctor> {
-    return api<Doctor>('/doctors', {
+export async function createDoctor(data: PersonalCreateData): Promise<Personal> {
+    return api<Personal>('/doctors', {
         method: 'POST',
         body: data,
     });
 }
 
-export async function updateDoctor(id: number, data: {full_name: string}): Promise<Doctor> {
-    return api<Doctor>(`/doctors/${id}`, {
+export async function updateDoctor(id: number, data: PersonalCreateData): Promise<Personal> {
+    return api<Personal>(`/doctors/${id}`, {
         method: 'PUT',
         body: data,
     });
 }
 
-export async function deleteDoctor(id: number): Promise<void> {
-    return api<void>(`/doctors/${id}`, {
+export async function deleteDoctor(id: number): Promise<Personal> {
+    return api<Personal>(`/doctors/${id}`, {
         method: 'DELETE',
     });
 }
 
-export async function toggleDoctor(id: number) {
-  return api<Doctor>(`/doctors/${id}/toggle_active`, {
+export async function toggleDoctor(id: number): Promise<Personal> {
+  return api<Personal>(`/doctors/${id}/toggle_active`, {
     method: "PATCH",
   });
 }
-

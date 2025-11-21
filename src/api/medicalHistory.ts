@@ -1,19 +1,8 @@
 import { api } from "./client";
-import { Patient } from "./patient";
-import { Personal } from "./personal";
-import { CaxCode } from "./caxCodes";
-
-export interface Doctor {
-  id: number;
-  full_name: string;
-  is_active?: boolean;
-}
-
-export interface Nurse {
-  id: number;
-  full_name: string;
-  is_active?: boolean;
-}
+import type { Personal } from "./personal";
+import type { Patient } from "./patient";
+import type { CaxCode } from "./caxCodes";
+import { OraclePatient } from "@/types/oraclePatients";
 
 export interface MedicalHistoryCreate {
   admission_date: string;
@@ -53,12 +42,11 @@ export interface MedicalHistoryFilters {
 }
 
 export async function createMedicalHistory(data: MedicalHistoryCreate) {
-  return api("/medical_history/", {
+  return api<MedicalHistoryRead>("/medical_history/", {
     method: "POST",
     body: data,
   });
 }
-
 
 export const getMedicalHistoriesFiltered = async (
   filters: MedicalHistoryFilters = {}
@@ -71,24 +59,12 @@ export const getMedicalHistoriesFiltered = async (
   return api<MedicalHistoryRead[]>(`/medical_history?${params.toString()}`);
 };
 
-export async function getCaxCodes(): Promise<CaxCode[]> {
-  return api<CaxCode[]>("/cax_codes");
-}
-
-export async function getDoctors(): Promise<Personal[]> {
-  return api<Personal[]>("/doctors");
-}
-
-export async function getNurses(): Promise<Personal[]> {
-  return api<Personal[]>("/nurses");
-}
-
 export async function cancelMedicalHistory(historyId: number) {
-  return api(`/medical_history/${historyId}/cancel`, { method: "POST" });
+  return api<MedicalHistoryRead>(`/medical_history/${historyId}/cancel`, { method: "POST" });
 }
 
 export async function reactivateMedicalHistory(historyId: number) {
-  return api(`/medical_history/${historyId}/reactivate`, { method: "POST" });
+  return api<MedicalHistoryRead>(`/medical_history/${historyId}/reactivate`, { method: "POST" });
 }
 
 export async function searchPatients(params: {
@@ -97,13 +73,13 @@ export async function searchPatients(params: {
   secondname?: string;
   birthdate?: string;
   address?: string;
-}): Promise<Patient[] | { error: string }> {
+}): Promise<OraclePatient[] | { error: string }> {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value) searchParams.append(key, value);
   });
 
-  return api<Patient[] | { error: string }>(
+  return api<OraclePatient[] | { error: string }>(
     `/oracle/patient-search?${searchParams.toString()}`
   );
 }
