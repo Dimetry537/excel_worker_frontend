@@ -3,12 +3,12 @@ import {
   createMedicalHistory,
   searchPatients,
   suggestDischargeDate,
-} from "../api/medicalHistory";
-import { getCaxCodes } from "../api/caxCodes";
-import { getDoctors } from "../api/doctors";
-import { getNurses } from "../api/nurses";
+} from "@/api/medicalHistory";
+import { getCaxCodes } from "@/api/caxCodes";
+import { getDoctors } from "@/api/doctors";
+import { getNurses } from "@/api/nurses";
 
-import type { CaxCode } from "../api/caxCodes";
+import type { CaxCode } from "@/types/entities/caxCode";
 import type { Personal } from "@/types/entities/personal";
 import type { OraclePatient } from "@/types/entities/oraclePatients";
 import { toIsoDateSafe } from "@/utils/formatDate";

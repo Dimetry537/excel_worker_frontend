@@ -6,12 +6,10 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  // Скрываем навбар на странице логина
   if (location.pathname === '/login') {
     return null;
   }
 
-  // Подсветка активной ссылки
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
