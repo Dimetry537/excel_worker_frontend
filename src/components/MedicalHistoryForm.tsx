@@ -9,8 +9,8 @@ import { getDoctors } from "../api/doctors";
 import { getNurses } from "../api/nurses";
 
 import type { CaxCode } from "../api/caxCodes";
-import type { Personal } from "../api/personal";
-import type { OraclePatient } from "@/types/oraclePatients";
+import type { Personal } from "@/types/entities/personal";
+import type { OraclePatient } from "@/types/entities/oraclePatients";
 import { toIsoDateSafe } from "@/utils/formatDate";
 
 interface MedicalHistoryCreatePayload {

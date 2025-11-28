@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { Personal, PersonalCreateData } from "@/types/personal";
+import type { Personal, PersonalCreateData } from "@/types/entities/personal";
 
 export async function getDoctors(): Promise<Personal[]> {
     return api<Personal[]>('/doctors');

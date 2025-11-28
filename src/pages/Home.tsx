@@ -3,10 +3,10 @@ import {
   getMedicalHistoriesFiltered,
   cancelMedicalHistory,
   reactivateMedicalHistory,
-} from "../api/medicalHistory";
-import { format, startOfMonth, endOfMonth, formatISO } from "date-fns";
+} from "@/api/medicalHistory";
+import { startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { api } from "@/api/client";
-import type { MedicalHistoryRead } from "../api/medicalHistory";
+import type { MedicalHistoryRead } from "@/types/entities/medicalHistory";
 import { formatDate } from "../utils/formatDate";
 
 const PAGE_SIZE = 50;
@@ -17,7 +17,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  // Текущий месяц по умолчанию
   const today = new Date();
   const firstDay = startOfMonth(today);
   const lastDay = endOfMonth(today);
@@ -29,10 +28,8 @@ export default function Home() {
   const [startDateApi, setStartDateApi] = useState(defaultStartApi);
   const [endDateApi, setEndDateApi] = useState(defaultEndApi);
 
-  // Пагинация
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Сортировка
   type SortableField =
     | "history_number"
     | "patient_full_name"

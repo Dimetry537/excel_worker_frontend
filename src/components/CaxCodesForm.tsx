@@ -5,8 +5,8 @@ import {
   updateCaxCode,
   deleteCaxCode,
   toggleCaxCodeActive,
-} from "../api/caxCodes";
-import type { CaxCode } from "../api/caxCodes";
+} from "@/api/caxCodes";
+import type { CaxCode } from "@/types/entities/caxCode";
 
 export default function CaxCodesForm() {
   const [codes, setCodes] = useState<CaxCode[]>([]);

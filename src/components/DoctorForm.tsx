@@ -1,25 +1,30 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  createDoctor,
   getDoctors,
-  deleteDoctor,
+  createDoctor,
   updateDoctor,
+  deleteDoctor,
   toggleDoctor,
-} from "../api/doctors";
-import type { Doctor } from "../api/doctors";
+} from "@/api/doctors";
+import type { Personal } from "@/types/entities/personal";
+import { toast } from "sonner";
 
 export default function DoctorForm() {
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [doctors, setDoctors] = useState<Personal[]>([]);
   const [name, setName] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchDoctors = async () => {
+    setIsLoading(true);
     try {
       const data = await getDoctors();
       setDoctors(data);
-    } catch (error) {
-      console.error("Ошибка загрузки врачей:", error);
+    } catch {
+      toast.error("Не удалось загрузить список врачей");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -29,117 +34,155 @@ export default function DoctorForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) {
+      return toast.error("Введите ФИО врача");
+    }
+
+    setIsLoading(true);
     try {
       if (editingId !== null) {
-        await updateDoctor(editingId, { full_name: name });
+        await updateDoctor(editingId, { full_name: name.trim() });
+        toast.success("Врач успешно обновлён");
         setEditingId(null);
       } else {
-        await createDoctor({ full_name: name });
+        await createDoctor({ full_name: name.trim() });
+        toast.success("Врач успешно добавлен");
       }
       setName("");
       await fetchDoctors();
-    } catch (error) {
-      console.error("Ошибка при сохранении:", error);
+    } catch {
+      toast.error("Ошибка при сохранении врача");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Удалить врача?")) return;
-    try {
-      await deleteDoctor(id);
-      await fetchDoctors();
-    } catch (error) {
-      console.error("Ошибка при удалении:", error);
-    }
-  };
-
-  const handleEdit = (doctor: Doctor) => {
+  const handleEdit = (doctor: Personal) => {
     setEditingId(doctor.id);
     setName(doctor.full_name);
   };
 
-  const handleToggleActive = async (id: number) => {
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setName("");
+  };
+
+  const handleToggleActive = async (id: number, currentActive: boolean) => {
+    if (!confirm(currentActive ? "Деактивировать врача?" : "Активировать врача?")) {
+      return;
+    }
+
     try {
-      await toggleDoctor(id);
-      await fetchDoctors();
-    } catch (error) {
-      console.error("Ошибка при изменении активности:", error);
+      const updated = await toggleDoctor(id);
+      toast.success(currentActive ? "Врач деактивирован" : "Врач активирован");
+      setDoctors(prev => prev.map(d => d.id === id ? updated : d));
+    } catch {
+      toast.error("Не удалось изменить статус");
     }
   };
 
-  const filteredDoctors = showInactive
-    ? doctors
-    : doctors.filter((doc) => doc.is_active);
+  const handleDelete = async (id: number, fullName: string) => {
+    if (!confirm(`Удалить врача "${fullName}"? Это действие необратимо.`)) {
+      return;
+    }
+
+    try {
+      const deleted = await deleteDoctor(id);
+      toast.success(`Врач "${deleted.full_name}" полностью удалён`);
+      await fetchDoctors();
+    } catch (err: unknown) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "status" in err &&
+        (err as { status?: number }).status === 400
+      ) {
+        const errorData = err as { data?: { detail?: string } };
+        toast.info(
+          errorData.data?.detail ||
+            "Врач деактивирован вместо удаления (есть связанные записи)"
+        );
+        await fetchDoctors();
+      } else {
+        toast.error("Ошибка при удалении врача");
+      }
+    }
+  };
+
+  const filteredDoctors = doctors.filter(doctor => showInactive || doctor.is_active);
+
+  if (isLoading && doctors.length === 0) {
+    return <div>Загрузка врачей...</div>;
+  }
 
   return (
     <div>
-      <div>
-        <h2>
-          {editingId ? "Редактировать врача" : "Добавить врача"}
-        </h2>
+      <h2>{editingId ? "Редактировать врача" : "Добавить врача"}</h2>
 
-        <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
+        <div>
           <input
+            type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="ФИО врача"
+            disabled={isLoading}
           />
-          <button
-            type="submit"
-          >
-            {editingId ? "Сохранить" : "Добавить"}
+          <button type="submit" disabled={isLoading || !name.trim()}>
+            {isLoading ? "..." : editingId ? "Сохранить" : "Добавить"}
           </button>
+
           {editingId !== null && (
-            <button
-              type="button"
-              onClick={() => {
-                setEditingId(null);
-                setName("");
-              }}
-            >
+            <button type="button" onClick={handleCancelEdit}>
               Отмена
             </button>
           )}
-        </form>
-
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-            />
-            Показать скрытых
-          </label>
         </div>
+      </form>
 
-        <ul>
-          {filteredDoctors.map((doc) => (
-            <li
-              key={doc.id}
-            >
-              <span>{doc.full_name}</span>
-              <div>
-                <button
-                  onClick={() => handleEdit(doc)}
-                >
-                  ✏️ Редактировать
-                </button>
-                <button
-                  onClick={() => handleToggleActive(doc.id)}
-                >
-                  {doc.is_active ? "🙈 Скрыть" : "👁 Показать"}
-                </button>
-                <button
-                  onClick={() => handleDelete(doc.id)}
-                >
-                  🗑 Удалить
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+          />{" "}
+          Показать деактивированных
+        </label>
       </div>
+
+      <ul>
+        {filteredDoctors.map((doctor) => (
+          <li key={doctor.id}>
+            <span>
+              {doctor.full_name}
+              {!doctor.is_active && " (неактивен)"}
+            </span>
+
+            <div>
+              <button onClick={() => handleEdit(doctor)}>
+                ✏️ Редактировать
+              </button>
+
+              <button onClick={() => handleToggleActive(doctor.id, doctor.is_active)}>
+                {doctor.is_active ? "🙈 Скрыть" : "👁 Показать"}
+              </button>
+
+              <button onClick={() => handleDelete(doctor.id, doctor.full_name)}>
+                🗑 Удалить
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {filteredDoctors.length === 0 && (
+        <p>
+          {showInactive
+            ? "Нет врачей (включая деактивированных)"
+            : "Нет активных врачей"}
+        </p>
+      )}
     </div>
   );
 }
