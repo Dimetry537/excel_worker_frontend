@@ -1,14 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Home from "./pages/Home";
-import Staff from "./pages/Staff";
-import History from "./pages/History";
-import Mes from "./pages/Mes";
-import Login from "./pages/Login";
+import Home from "@/pages/Home";
+import Staff from "@/pages/Staff";
+import CreateHistory from "@/pages/CreateHistory";
+import HistoryDetail from "@/pages/HistoryDetail";
+import Mes from "@/pages/Mes";
+import Login from "@/pages/Login";
 // import CreateUser from "./pages/CreateUser"; // ← Если будет страница создания пользователя
-import Navbar from "./components/Navbar";
-import PrivateRoute from "./components/PrivateRoute";
+import Navbar from "@/components/Navbar";
+import PrivateRoute from "@/components/PrivateRoute";
 import { useAuth } from "@/hooks/useAuth";
-import "./App.css";
+import "@/App.css";
 
 function AppRoutes() {
   const { user, loading } = useAuth();
@@ -49,7 +50,15 @@ function AppRoutes() {
           path="/history"
           element={
             <PrivateRoute>
-              <History />
+              <CreateHistory />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/history/:id"
+          element={
+            <PrivateRoute>
+              <HistoryDetail />
             </PrivateRoute>
           }
         />

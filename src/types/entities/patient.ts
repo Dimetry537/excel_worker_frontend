@@ -8,3 +8,10 @@ export interface Patient {
   created_at?: string | null;
   updated_at?: string | null;
 }
+
+export type PatientCreate = {
+  full_name: string;
+  birth_date: string;
+  address: string;
+  workplace?: string | null;
+};

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   getMedicalHistoriesFiltered,
   cancelMedicalHistory,
@@ -7,11 +8,12 @@ import {
 import { startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { api } from "@/api/client";
 import type { MedicalHistoryRead } from "@/types/entities/medicalHistory";
-import { formatDate } from "../utils/formatDate";
+import { formatDate } from "@/utils/formatDate";
 
 const PAGE_SIZE = 50;
 
 export default function Home() {
+  const navigate = useNavigate();
   const [allHistories, setAllHistories] = useState<MedicalHistoryRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -367,7 +369,13 @@ export default function Home() {
                 </tr>
               ) : (
                 paginatedHistories.map((h, index) => (
-                  <tr key={h.id} className={`border-b border-gray-300 hover:bg-gray-50 transition ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                  <tr 
+                  key={h.id}
+                  className={`border-b border-gray-300 hover:bg-gray-50 transition cursor-pointer ${
+                  index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  } hover:bg-blue-50`}
+                  onClick={() => navigate(`/history/${h.id}`)}
+                  >
                     <td className="px-6 py-4 text-sm font-semibold text-center text-gray-900 border-r border-gray-300">
                       {h.history_number}
                     </td>
@@ -415,14 +423,20 @@ export default function Home() {
                     <td className="px-6 py-4 text-center">
                       {h.cancelled ? (
                         <button
-                          onClick={() => handleReactivate(h.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReactivate(h.id);
+                          }}
                           className="bg-green-600 hover:bg-green-700 text-white font-medium text-xs px-5 py-2 rounded transition shadow"
                         >
                           Активировать
                         </button>
                       ) : (
                         <button
-                          onClick={() => handleCancel(h.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCancel(h.id);
+                          }}
                           className="bg-red-600 hover:bg-red-700 text-white font-medium text-xs px-5 py-2 rounded transition shadow"
                         >
                           Отменить

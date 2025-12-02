@@ -54,3 +54,18 @@ export async function suggestDischargeDate(data: {
     body: data,
   });
 }
+
+export const getMedicalHistoryById = (id: number) =>
+  api<MedicalHistoryRead>(`/medical_history/${id}`);
+
+export const updateMedicalHistory = (id: number, data: Partial<MedicalHistoryCreate>) =>
+  api<MedicalHistoryRead>(`/medical_history/${id}`, {
+    method: "PATCH",
+    body: data,
+  });
+
+export const startGenerateReport = (historyId: number) =>
+  api<{ task_id: string; message: string }>(
+    `/medical_history/${historyId}/report-async`,
+    { method: "POST" }
+  );
