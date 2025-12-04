@@ -6,11 +6,11 @@ import {
   reactivateMedicalHistory,
   startGenerateReport,
 } from "@/api/medicalHistory";
-import { getOperationsByHistoryId } from "@/api/operation";
+import { deleteOperation, getOperationsByHistoryId } from "@/api/operation";
 import { formatDate } from "@/utils/formatDate";
 import EditMedicalHistoryForm from "@/components/EditMedicalHistoryForm";
 import EditPatientForm from "@/components/EditPatientForm";
-import AddOperationForm from "@/components/AddOperationForm";
+import OperationForm from "@/components/OperationForm";
 import type { OperationRead } from "@/types/entities/operation";
 import type { MedicalHistoryRead } from "@/types/entities/medicalHistory";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ export default function HistoryDetail() {
 
   const [history, setHistory] = useState<MedicalHistoryRead | null>(null);
   const [operations, setOperations] = useState<OperationRead[]>([]);
+  const [editingOperation, setEditingOperation] = useState<OperationRead | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [activeTab, setActiveTab] = useState<"history" | "patient" | "operation">("history");
@@ -137,13 +138,13 @@ export default function HistoryDetail() {
         <div className="flex gap-3">
           <button
             onClick={handleToggleStatus}
-            className={`px-6 py-3 rounded font-medium text-white ${history.cancelled ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
+            className={`px-6 py-3 rounded font-medium text-white transition ${history.cancelled ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
           >
             {history.cancelled ? "Активировать" : "Отменить"}
           </button>
           <button
             onClick={handleGenerateReport}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded font-medium"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded font-medium transition"
           >
             DOCX отчёт
           </button>
@@ -206,21 +207,72 @@ export default function HistoryDetail() {
 
         {activeTab === "operation" && (
           <div className="space-y-8">
-            <AddOperationForm historyId={historyId} onSuccess={fetchData} />
+            {/* Форма добавления новой операции */}
+            <OperationForm
+              historyId={historyId}
+              onSuccess={fetchData}
+            />
 
+            {/* Список операций */}
             <div>
-              <h3 className="text-xl font-bold mb-4">Список операций</h3>
+              <h3 className="text-xl font-bold mb-6">Список операций</h3>
+
               {operations.length === 0 ? (
-                <p className="text-gray-500">Операций не проводилось</p>
+                <p className="text-gray-500 text-center py-8">Операций не проводилось</p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {operations.map((op) => (
-                    <div key={op.id} className="border rounded-lg p-5 bg-gray-50">
-                      <h4 className="font-bold text-lg">{op.oper_name}</h4>
-                      <p className="text-sm mt-2 whitespace-pre-wrap">{op.oper_protocol}</p>
-                      <p className="text-xs text-gray-500 mt-3">
-                        Добавлена: {new Date(op.created_at).toLocaleString()}
-                      </p>
+                    <div key={op.id} className="border rounded-xl p-6 bg-gray-50 shadow-sm">
+                      {/* Если редактируем эту операцию — показываем форму */}
+                      {editingOperation?.id === op.id ? (
+                        <OperationForm
+                          historyId={historyId}
+                          operation={op}
+                          onSuccess={() => {
+                            setEditingOperation(null);
+                            fetchData();
+                          }}
+                          onCancel={() => setEditingOperation(null)}
+                        />
+                      ) : (
+                        /* Обычный вид операции */
+                        <div className="flex justify-between items-start gap-6">
+                          <div className="flex-1">
+                            <h4 className="text-lg font-bold text-gray-900">{op.oper_name}</h4>
+                            <p className="text-gray-700 mt-3 whitespace-pre-wrap leading-relaxed">
+                              {op.oper_protocol}
+                            </p>
+                            <p className="text-sm text-gray-500 mt-4">
+                              Добавлена: {formatDate(op.created_at)}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col gap-3">
+                            <button
+                              onClick={() => setEditingOperation(op)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition shadow-sm"
+                            >
+                              Редактировать
+                            </button>
+
+                            <button
+                              onClick={async () => {
+                                if (!confirm("Удалить операцию? Это действие нельзя отменить.")) return;
+                                try {
+                                  await deleteOperation(op.id);
+                                  toast.success("Операция удалена");
+                                  fetchData();
+                                } catch {
+                                  toast.error("Ошибка при удалении");
+                                }
+                              }}
+                              className="bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-lg font-medium transition shadow-sm"
+                            >
+                              Удалить
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -231,7 +283,7 @@ export default function HistoryDetail() {
       </div>
 
       {/* Основные данные (всегда видны) */}
-      <div className="bg-gray-50 rounded-lg p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
+      <div className="bg-gray-50 rounded-lg p-8 grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-700">
         <div>
           <p><strong>Поступление:</strong> {formatDate(history.admission_date)}</p>
           <p><strong>Выписка:</strong> {history.discharge_date ? formatDate(history.discharge_date) : "—"}</p>
