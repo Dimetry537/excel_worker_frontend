@@ -1,3 +1,4 @@
+export { ApiError }
 const API_BASE = import.meta.env.VITE_API_URL;
 if (!API_BASE) throw new Error("VITE_API_URL не задан в .env!");
 
@@ -39,15 +40,16 @@ const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue = [];
 };
 
-export async function api<T>(
+export async function api<T = unknown>(
   path: string,
   options: Omit<RequestInit, "body"> & {
     body?: unknown;
     noAuth?: boolean;
     query?: Record<string, string | number | boolean | undefined>;
+    responseType?: "json" | "blob" | "text";
   } = {}
 ): Promise<T> {
-  const { body, noAuth = false, query, ...restOptions } = options;
+  const { body, noAuth = false, query, responseType = "json", ...restOptions } = options;
 
   let url = `${API_BASE}${path}`;
 
@@ -125,17 +127,18 @@ export async function api<T>(
     let detail: string | undefined;
 
     try {
-      const data = await res.json().catch(() => ({}));
-      if (data?.detail) {
-        msg = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
-        detail = msg;
+      const text = await res.text();
+      try {
+        const data = JSON.parse(text);
+        if (data?.detail) {
+          msg = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+          detail = msg;
+        }
+      } catch {
+        msg = text || msg;
       }
     } catch {
-      try {
-        msg = await res.text();
-      } catch {
-        msg = `Не удалось получить тело ответа (статус ${res.status})`;
-      }
+      msg = `Не удалось получить тело ответа (статус ${res.status})`;
     }
 
     throw new ApiError(msg, res.status, detail);
@@ -145,7 +148,15 @@ export async function api<T>(
     return null as T;
   }
 
-  return res.json();
+  if (responseType === "blob") {
+    return (await res.blob()) as T;
+  }
+
+  if (responseType === "text") {
+    return (await res.text()) as T;
+  }
+
+  return res.json() as T;
 }
 
 export const loginApi = async (username: string, password: string) => {
