@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "@/api/client";
 import { OraclePatient } from "@/types/entities/oraclePatients";
 import type { MedicalHistoryCreate, MedicalHistoryRead, MedicalHistoryFilters } from "@/types/entities/medicalHistory";
 

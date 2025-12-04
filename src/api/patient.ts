@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "@/api/client";
 import type { Patient } from "@/types/entities/patient";
 
 export type PatientCreate = Omit<Patient, "id" | "is_active" | "created_at" | "updated_at">;

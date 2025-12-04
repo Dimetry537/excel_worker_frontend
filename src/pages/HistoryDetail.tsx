@@ -4,9 +4,15 @@ import {
   getMedicalHistoryById,
   cancelMedicalHistory,
   reactivateMedicalHistory,
-  startGenerateReport,
 } from "@/api/medicalHistory";
-import { deleteOperation, getOperationsByHistoryId } from "@/api/operation";
+import {
+  startGenerateMedicalHistoryReport,
+  pollReportTask
+} from "@/api/medicalHistoryReport";
+import {
+   deleteOperation,
+   getOperationsByHistoryId
+} from "@/api/operation";
 import { formatDate } from "@/utils/formatDate";
 import EditMedicalHistoryForm from "@/components/EditMedicalHistoryForm";
 import EditPatientForm from "@/components/EditPatientForm";
@@ -79,37 +85,20 @@ export default function HistoryDetail() {
     }
   };
 
-  const handleGenerateReport = async () => {
+  const handleGenerateHistoryReport = async () => {
     try {
-      const { task_id } = await startGenerateReport(historyId);
-      toast.loading("Генерация отчёта...", { id: "report-toast" });
+      const { task_id } = await startGenerateMedicalHistoryReport(historyId);
+      toast.loading("Генерация отчёта по истории болезни...", { id: "history-report" });
 
-      const checkStatus = async () => {
-        try {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/report-task/${task_id}`);
-          if (res.ok) {
-            toast.dismiss("report-toast");
-            toast.success("Отчёт готов!");
-
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `История_болезни_${history?.history_number || historyId}.docx`;
-            a.click();
-            URL.revokeObjectURL(url);
-          } else {
-            setTimeout(checkStatus, 2000);
-          }
-        } catch {
-          toast.dismiss("report-toast");
-          toast.error("Ошибка при проверке статуса отчёта");
-        }
-      };
-
-      setTimeout(checkStatus, 2000);
-    } catch {
-      toast.error("Не удалось запустить генерацию отчёта");
+      pollReportTask(
+        task_id,
+        "report_task",
+        `История_болезни_${history?.history_number || historyId}.docx`,
+        "history-report"
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Не удалось запустить генерацию отчёта";
+      toast.error(message);
     }
   };
 
@@ -143,7 +132,7 @@ export default function HistoryDetail() {
             {history.cancelled ? "Активировать" : "Отменить"}
           </button>
           <button
-            onClick={handleGenerateReport}
+            onClick={handleGenerateHistoryReport}
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded font-medium transition"
           >
             DOCX отчёт

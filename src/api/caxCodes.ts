@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "@/api/client";
 import type { CaxCode } from "@/types/entities/caxCode";
 
 export async function getCaxCodes(): Promise<CaxCode[]> {

@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "@/api/client";
 import type { Operation, OperationCreate } from "@/types/entities/operation";
 
 export const getOperations = () =>

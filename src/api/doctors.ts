@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api } from "@/api/client";
 import type { Personal, PersonalCreateData } from "@/types/entities/personal";
 
 export async function getDoctors(): Promise<Personal[]> {
