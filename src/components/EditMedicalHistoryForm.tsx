@@ -63,104 +63,100 @@ export default function EditMedicalHistoryForm({ history, onSuccess, onClose }: 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-screen overflow-y-auto">
-        <h3 className="text-2xl font-bold mb-6">Редактировать историю № {history.history_number}</h3>
+    <div>
+      <div onClick={onClose} />
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block font-medium">Диагноз *</label>
-            <input
-              type="text"
-              value={form.diagnosis}
-              onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
-              required
-              className="w-full border rounded px-4 py-2"
-            />
-          </div>
+      <div>
+        <div>
+          <h3>Редактировать историю № {history.history_number}</h3>
 
-          <div>
-            <label className="block font-medium">МКБ-10 *</label>
-            <input
-              type="text"
-              value={form.icd10_code}
-              onChange={(e) => setForm({ ...form, icd10_code: e.target.value })}
-              required
-              className="w-full border rounded px-4 py-2"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <form onSubmit={handleSubmit}>
             <div>
-              <label className="block font-medium">ЦАХ-код</label>
-              <select
-                value={form.cax_code_id}
-                onChange={(e) => setForm({ ...form, cax_code_id: Number(e.target.value) })}
-                className="w-full border rounded px-4 py-2"
-              >
-                <option value={0}>—</option>
-                {caxCodes.map(c => (
-                  <option key={c.id} value={c.id}>{c.cax_name}</option>
-                ))}
-              </select>
+              <label>Диагноз *</label>
+              <input
+                type="text"
+                value={form.diagnosis}
+                onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
+                required
+              />
             </div>
 
             <div>
-              <label className="block font-medium">Врач</label>
-              <select
-                value={form.doctor_id}
-                onChange={(e) => setForm({ ...form, doctor_id: Number(e.target.value) })}
-                className="w-full border rounded px-4 py-2"
-              >
-                <option value={0}>—</option>
-                {doctors.map(d => (
-                  <option key={d.id} value={d.id}>{d.full_name}</option>
-                ))}
-              </select>
+              <label>МКБ-10 *</label>
+              <input
+                type="text"
+                value={form.icd10_code}
+                onChange={(e) => setForm({ ...form, icd10_code: e.target.value })}
+                required
+              />
             </div>
 
             <div>
-              <label className="block font-medium">Медсестра</label>
-              <select
-                value={form.nurse_id}
-                onChange={(e) => setForm({ ...form, nurse_id: Number(e.target.value) })}
-                className="w-full border rounded px-4 py-2"
-              >
-                <option value={0}>—</option>
-                {nurses.map(n => (
-                  <option key={n.id} value={n.id}>{n.full_name}</option>
-                ))}
-              </select>
+              <div>
+                <label>ЦАХ-код</label>
+                <select
+                  value={form.cax_code_id}
+                  onChange={(e) => setForm({ ...form, cax_code_id: Number(e.target.value) })}
+                >
+                  <option value={0}>—</option>
+                  {caxCodes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.cax_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label>Врач</label>
+                <select
+                  value={form.doctor_id}
+                  onChange={(e) => setForm({ ...form, doctor_id: Number(e.target.value) })}
+                >
+                  <option value={0}>—</option>
+                  {doctors.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label>Медсестра</label>
+                <select
+                  value={form.nurse_id}
+                  onChange={(e) => setForm({ ...form, nurse_id: Number(e.target.value) })}
+                >
+                  <option value={0}>—</option>
+                  {nurses.map((n) => (
+                    <option key={n.id} value={n.id}>
+                      {n.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block font-medium">Дата выписки</label>
-            <input
-              type="date"
-              value={form.discharge_date}
-              onChange={(e) => setForm({ ...form, discharge_date: e.target.value })}
-              className="w-full border rounded px-4 py-2"
-            />
-          </div>
+            <div>
+              <label>Дата выписки</label>
+              <input
+                type="date"
+                value={form.discharge_date}
+                onChange={(e) => setForm({ ...form, discharge_date: e.target.value })}
+              />
+            </div>
 
-          <div className="flex gap-4 pt-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded font-medium disabled:opacity-50"
-            >
-              {loading ? "Сохранение..." : "Сохранить изменения"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded font-medium"
-            >
-              Отмена
-            </button>
-          </div>
-        </form>
+            <div>
+              <button type="button" onClick={onClose}>
+                Отмена
+              </button>
+              <button type="submit" disabled={loading}>
+                {loading ? "Сохранение..." : "Сохранить изменения"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

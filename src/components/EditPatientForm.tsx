@@ -42,72 +42,61 @@ export default function EditPatientForm({ patient, onSuccess, onClose }: Props) 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-screen overflow-y-auto">
-        <h3 className="text-xl font-bold mb-6">Редактировать пациента</h3>
+      <div>
+        <div>
+          <h3>Редактировать пациента</h3>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">ФИО *</label>
-            <input
-              name="full_name"
-              type="text"
-              defaultValue={patient.full_name}
-              required
-              className="w-full border rounded px-4 py-2"
-            />
-          </div>
+          <form onSubmit={handleSubmit}>
+            <div>
+              <label>ФИО *</label>
+              <input
+                name="full_name"
+                type="text"
+                defaultValue={patient.full_name}
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Дата рождения *</label>
-            <input
-              name="birth_date"
-              type="date"
-              defaultValue={patient.birth_date}
-              required
-              className="w-full border rounded px-4 py-2"
-            />
-          </div>
+            <div>
+              <label>Дата рождения *</label>
+              <input
+                name="birth_date"
+                type="date"
+                defaultValue={patient.birth_date}
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Адрес *</label>
-            <input
-              name="address"
-              type="text"
-              defaultValue={patient.address}
-              required
-              className="w-full border rounded px-4 py-2"
-            />
-          </div>
+            <div>
+              <label>Адрес *</label>
+              <input
+                name="address"
+                type="text"
+                defaultValue={patient.address}
+                required
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Место работы</label>
-            <input
-              name="workplace"
-              type="text"
-              defaultValue={patient.workplace || ""}
-              placeholder="Не указано"
-              className="w-full border rounded px-4 py-2"
-            />
-          </div>
+            <div>
+              <label>Место работы</label>
+              <input
+                name="workplace"
+                type="text"
+                defaultValue={patient.workplace || ""}
+                placeholder="Не указано"
+              />
+            </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded font-medium"
-            >
-              Сохранить
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded font-medium"
-            >
-              Отмена
-            </button>
-          </div>
-        </form>
+            <div>
+              <button type="submit">
+                Сохранить
+              </button>
+              <button type="button" onClick={onClose}>
+                Отмена
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
-  );
+    );
 }

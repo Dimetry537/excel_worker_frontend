@@ -8,13 +8,21 @@ export const getOperationById = (id: number) =>
   api<Operation>(`/operations/${id}`);
 
 export const getOperationsByHistoryId = (historyId: number) =>
-  api<Operation[]>(`/operations/${historyId}`);
+  api<Operation[]>(`/operations/history/${historyId}`);
 
 export const createOperation = (data: OperationCreate) =>
-  api<Operation>("/operations", { method: "POST", body: data });
+  api<Operation>("/operations", {
+    method: "POST",
+    body: data,
+  });
 
 export const updateOperation = (id: number, data: OperationCreate) =>
-  api<Operation>(`/operations/${id}`, { method: "PUT", body: data });
+  api<Operation>(`/operations/${id}`, {
+    method: "PUT",
+    body: data,
+  });
 
 export const deleteOperation = (id: number) =>
-  api<Operation>(`/operations/${id}`, { method: "DELETE" });
+  api<Operation>(`/operations/${id}`, {
+    method: "DELETE",
+  });

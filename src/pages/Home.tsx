@@ -9,26 +9,17 @@ import { startOfMonth, endOfMonth, formatISO } from "date-fns";
 import { api } from "@/api/client";
 import type { MedicalHistoryRead } from "@/types/entities/medicalHistory";
 import { formatDate } from "@/utils/formatDate";
+import { usePersistedFilters } from "@/hooks/usePersistedFilters";
 
 const PAGE_SIZE = 50;
 
 export default function Home() {
   const navigate = useNavigate();
+  const [filters, setFilters] = usePersistedFilters();
   const [allHistories, setAllHistories] = useState<MedicalHistoryRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
-
-  const today = new Date();
-  const firstDay = startOfMonth(today);
-  const lastDay = endOfMonth(today);
-
-  const defaultStartApi = formatISO(firstDay, { representation: "date" });
-  const defaultEndApi = formatISO(lastDay, { representation: "date" });
-
-  const [fullName, setFullName] = useState("");
-  const [startDateApi, setStartDateApi] = useState(defaultStartApi);
-  const [endDateApi, setEndDateApi] = useState(defaultEndApi);
 
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -47,27 +38,37 @@ export default function Home() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const fetchHistories = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const data = await getMedicalHistoriesFiltered({
-        full_name: fullName.trim() || undefined,
-        start_date: startDateApi || undefined,
-        end_date: endDateApi || undefined,
+        full_name: filters.fullName || undefined,
+        start_date: filters.startDate || undefined,
+        end_date: filters.endDate || undefined,
       });
       setAllHistories(data);
-      setCurrentPage(1);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки данных");
-    } finally {
-      setLoading(false);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : "Ошибка загрузки данных");
     }
-  };
-
+  }
+    
   useEffect(() => {
-    fetchHistories();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await getMedicalHistoriesFiltered({
+          full_name: filters.fullName || undefined,
+          start_date: filters.startDate || undefined,
+          end_date: filters.endDate || undefined,
+        });
+        setAllHistories(data);
+      } catch (error: unknown) {
+        setError(error instanceof Error ? error.message : "Ошибка загрузки данных");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [filters]);
 
   const handleCancel = async (historyId: number) => {
     if (!confirm("Вы уверены, что хотите отменить эту историю болезни?")) return;
@@ -132,9 +133,13 @@ export default function Home() {
   const paginatedHistories = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const handleReset = () => {
-    setFullName("");
-    setStartDateApi(defaultStartApi);
-    setEndDateApi(defaultEndApi);
+    const today = new Date();
+    const newFilters = {
+      fullName: "",
+      startDate: formatISO(startOfMonth(today), { representation: "date" }),
+      endDate: formatISO(endOfMonth(today), { representation: "date" }),
+    };
+    setFilters(newFilters);
     fetchHistories();
   };
 
@@ -147,9 +152,9 @@ export default function Home() {
       const resp = await api<{ task_id: string }>("/medical_history/export", {
         method: "POST",
         query: {
-          full_name: fullName.trim() || undefined,
-          start_date: startDateApi || undefined,
-          end_date: endDateApi || undefined,
+          full_name: filters.fullName.trim() || undefined,
+          start_date: filters.startDate || undefined,
+          end_date: filters.endDate || undefined,
         },
       });
 
@@ -206,8 +211,8 @@ export default function Home() {
           <label className="block text-sm font-medium text-gray-700 mb-1">ФИО пациента</label>
           <input
             type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            value={filters.fullName}
+            onChange={(e) => setFilters(prev => ({ ...prev, fullName: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Иванов Иван Иванович"
           />
@@ -218,12 +223,12 @@ export default function Home() {
           <label className="block text-sm font-medium text-gray-700 mb-1">Дата поступления с</label>
           <input
             type="date"
-            value={startDateApi}
-            onChange={(e) => setStartDateApi(e.target.value)}
+            value={filters.startDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 peer"
             lang="ru"
           />
-          {!startDateApi && (
+          {!filters.startDate && (
             <span className="absolute left-3 top-9 text-gray-400 pointer-events-none peer-focus:hidden">
               ДД.ММ.ГГГГ
             </span>
@@ -235,12 +240,12 @@ export default function Home() {
           <label className="block text-sm font-medium text-gray-700 mb-1">по</label>
           <input
             type="date"
-            value={endDateApi}
-            onChange={(e) => setEndDateApi(e.target.value)}
+            value={filters.endDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 peer"
             lang="ru"
           />
-          {!endDateApi && (
+          {!filters.endDate && (
             <span className="absolute left-3 top-9 text-gray-400 pointer-events-none peer-focus:hidden">
               ДД.ММ.ГГГГ
             </span>

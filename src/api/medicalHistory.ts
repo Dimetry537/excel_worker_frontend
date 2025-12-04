@@ -60,7 +60,7 @@ export const getMedicalHistoryById = (id: number) =>
 
 export const updateMedicalHistory = (id: number, data: Partial<MedicalHistoryCreate>) =>
   api<MedicalHistoryRead>(`/medical_history/${id}`, {
-    method: "PATCH",
+    method: "PUT",
     body: data,
   });
 
