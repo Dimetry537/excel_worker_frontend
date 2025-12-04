@@ -22,13 +22,13 @@ export const getReportTaskResult = async (taskId: string): Promise<Blob> => {
 export const pollReportTask = async (
   taskId: string,
   filename: string,
-  toastId: string = "report-toast"
+  toastId: string = "report-toast" // оставь дефолт, если хочешь
 ) => {
   const check = async () => {
     try {
       const blob = await getReportTaskResult(taskId);
 
-      toast.dismiss(toastId);
+      toast.dismiss(toastId); // теперь точно закроется нужный тост
       toast.success("Отчёт готов!");
 
       const url = URL.createObjectURL(blob);
@@ -36,10 +36,9 @@ export const pollReportTask = async (
       a.href = url;
       a.download = filename;
       a.click();
-      a.remove();
       URL.revokeObjectURL(url);
     } catch (error: unknown) {
-      if (error instanceof ApiError && error.status === 400) {
+      if (error instanceof ApiError && error.status === 202) {
         setTimeout(check, 2000);
         return;
       }

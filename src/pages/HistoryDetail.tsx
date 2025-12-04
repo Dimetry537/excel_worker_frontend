@@ -88,11 +88,13 @@ export default function HistoryDetail() {
   const handleGenerateHistoryReport = async () => {
     try {
       const { task_id } = await startGenerateMedicalHistoryReport(historyId);
-      toast.loading("Генерация отчёта по истории болезни...", { id: "history-report" });
+      
+      toast.loading("Генерация отчёта по истории болезни...", { 
+        id: "history-report" 
+      });
 
       pollReportTask(
         task_id,
-        "report_task",
         `История_болезни_${history?.history_number || historyId}.docx`,
         "history-report"
       );
