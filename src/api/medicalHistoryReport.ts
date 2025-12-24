@@ -22,13 +22,13 @@ export const getReportTaskResult = async (taskId: string): Promise<Blob> => {
 export const pollReportTask = async (
   taskId: string,
   filename: string,
-  toastId: string = "report-toast" // оставь дефолт, если хочешь
+  toastId: string = "report-toast"
 ) => {
   const check = async () => {
     try {
       const blob = await getReportTaskResult(taskId);
 
-      toast.dismiss(toastId); // теперь точно закроется нужный тост
+      toast.dismiss(toastId);
       toast.success("Отчёт готов!");
 
       const url = URL.createObjectURL(blob);

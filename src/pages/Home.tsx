@@ -172,7 +172,7 @@ export default function Home() {
 
           if (statusData.state === "SUCCESS" && statusData.result) {
             const filePath = statusData.result.startsWith("/") ? statusData.result : `/${statusData.result}`;
-            const downloadUrl = `${import.meta.env.VITE_API_URL}${filePath}`;
+            const downloadUrl = filePath;
 
             const link = document.createElement("a");
             link.href = downloadUrl;
